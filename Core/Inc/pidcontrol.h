@@ -5,12 +5,12 @@
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
 //PID调参
-#define KP 0.5
-#define KI 0.5
+#define KP 1
+#define KI 0
 #define KD 0.5
 #define A 1
-#define B 1
-#define C 1
+#define B 0
+#define C 0
 //PID控制器
 typedef struct {
     float kp;

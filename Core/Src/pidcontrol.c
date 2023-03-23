@@ -28,17 +28,6 @@ float PID_calculate(PID *pid, float input) {
     return pid->output;
 }
 
-float PID_calculate_test(PID *pid) {
-    //TODO: 待完成：多点的误差计算
-    pid->error = pid->setpoint - 0; //误差
-    pid->integral += pid->error; //积分
-    pid->derivative = pid->error - pid->last_error; //微分
-    //Q: 这里的微分是怎么计算的？
-    //A: 这里的微分是误差的微分，误差的微分就是当前误差减去上一次误差
-    pid->output = pid->kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
-    pid->last_error = pid->error; //更新误差
-    return pid->output;
-}
 
 void slideFilteringInit(RollingFilter *indata, float *pBuf, int bufSize) {
     indata->pBuf = pBuf;
