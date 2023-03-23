@@ -42,6 +42,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
 #define RXBUFFERSIZE 128
 /* USER CODE END PD */
 
@@ -68,7 +70,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 _Bool initFlag = 0;
 _Bool crossFlag = 0;
-_Bool DoubleFlag = 0;
+_Bool roundaboutFlag = 0;
 short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
@@ -252,11 +254,46 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         if (QueueBack(&middleValueQueue)<=10)
         //处在十字路口
         {
-
+            if (crossFlag==0)
+            {
+                crossFlag = 1;
+                //执行进入十字路口的处理
+            }
+            else
+            {
+                crossFlag = 0;
+                //执行离开十字路口的处理
+            }
         }
+        if (QueueBack(&middleValueQueue)<=2* QueueGet(&middleValueQueue,middleValueCount-1)+10 && QueueBack(&middleValueQueue)>=2* QueueGet(&middleValueQueue,middleValueCount-1)-10)
+        //处在环岛区域
+        {
+            if (roundaboutFlag==0)
+            {
+                roundaboutFlag = 1;
+                //执行进入环岛区域的处理
+            }
+            else
+            {
+                roundaboutFlag = 0;
+                //执行离开环岛区域的处理
+            }
+        }
+        //进入分叉路口
+
 
 
     }
+}
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == BEED_Pin) {
+        stopFlag++;
+        if (stopFlag>=2)
+        {
+            //执行倒车入库
+        }
+    }
+
 }
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
@@ -316,3 +353,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+#pragma clang diagnostic pop
