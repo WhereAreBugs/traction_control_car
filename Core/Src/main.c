@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include "relocated.h"
 #include "servo.h"
+#include "queue.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -65,8 +66,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float  middleValue[10] = {};
-float middleResult = 0;
 _Bool initFlag = 0;
 _Bool crossFlag = 0;
 _Bool DoubleFlag = 0;
@@ -74,8 +73,11 @@ short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
 float adcRawBuffer[5] = {0};
+float middleValue[10] = {0};
 int Uart1_Rx_Cnt = 0;
-int middleValueCnt = 0;
+int middleValueCount = 0;
+Queue middleValueQueue;
+float middleResult = 0;
 /* USER CODE END 0 */
 
 /**
@@ -142,6 +144,7 @@ int main(void)
     PID_init(&piddata, KP, KI, KD, 0);
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
+    QueueInit(&middleValueQueue);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -239,6 +242,19 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM4) {
         //采用队列的方式保存ADC的值
+        QueuePush(&middleValueQueue, middleResult);
+        middleValueCount++;
+        if (middleValueCount>=5)
+        {
+            QueuePop(&middleValueQueue);
+            middleValueCount -= 1;
+        }
+        if (QueueBack(&middleValueQueue)<=10)
+        //处在十字路口
+        {
+
+        }
+
 
     }
 }
