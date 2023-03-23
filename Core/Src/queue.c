@@ -89,11 +89,29 @@ QueueDataType QueueBack(Queue* pq)
 
     return pq->tail->data;
 }
-
+QNode * c_head_ptr(Queue* pq)
+{
+    return pq->head;
+}
 _Bool QueueEmpty(Queue* pq)
 {
     return pq->head == NULL;   //空返回1  有元素0
 
+}
+float QueueGet(Queue *pq,int index)
+{
+    QNode* cur = pq->head;
+    int i = 0;
+    while (cur)
+    {
+        if (i == index)
+        {
+            return cur->data;
+        }
+        cur = cur->next;
+        ++i;
+    }
+    return -999;//表示没有找到
 }
 int QueueSize(Queue* pq)
 {
