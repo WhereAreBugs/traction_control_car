@@ -40,7 +40,7 @@ float slideFilteringCalculate(RollingFilter *indata, float inData) {
     //滑动平均滤波
     //滑动平均滤波器的原理是将一组数据按照一定的顺序排列，然后取中间的数据作为滤波后的数据。
     //滑动平均滤波器的优点是简单，缺点是对于突变的数据不敏感。
-    //这里采用的队列滑动平均滤波器，队列长度为5
+    //这里采用的队列滑动平均滤波器，队列长度为10
     indata->sum -= indata->pBuf[indata->index];
     indata->pBuf[indata->index] = inData;
     indata->sum += indata->pBuf[indata->index];

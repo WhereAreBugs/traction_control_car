@@ -65,6 +65,8 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+float  middleValue[10] = {};
+float middleResult = 0;
 _Bool initFlag = 0;
 _Bool crossFlag = 0;
 _Bool DoubleFlag = 0;
@@ -103,6 +105,9 @@ int main(void) {
     RollingFilter filter3;
     float *data3 = malloc(sizeof(float) * 10);
     slideFilteringInit(&filter3, data3, 10);
+    RollingFilter filter4;
+    slideFilteringInit(&filter4, middleValue, 10);
+
     /* USER CODE END Init */
 
     /* Configure the system clock */
@@ -155,6 +160,7 @@ int main(void) {
         float dat1 = slideFilteringCalculate(&filter1, adc_value[1]);
         float dat2 = slideFilteringCalculate(&filter2, adc_value[2]);
         float dat3 = slideFilteringCalculate(&filter3, adc_value[3]);
+        middleResult = slideFilteringCalculate(&filter4, adc_value[4]);
         //计算PID
         float result = PID_calculate(&piddata, (A * (dat0 - dat3) + B * (dat1 - dat2)) /
                                                (A * (dat0 + dat3) + fabsf(C * (dat1 - dat2))));
