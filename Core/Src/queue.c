@@ -48,13 +48,31 @@ void QueuePush(Queue* pq, QueueDataType x)
         pq->tail->next = newnode;
         pq->tail = pq->tail->next;
     }
-
-
-
 }
 
 
-
+float QueueVariance(Queue* pq)
+//方差
+{
+    float sum = 0;
+    float sum2 = 0;
+    float mean = 0;
+    float mean2 = 0;
+    float variance = 0;
+    int n = 0;
+    QNode* cur = pq->head;
+    while (cur)
+    {
+        sum += cur->data;
+        sum2 += cur->data*cur->data;
+        ++n;
+        cur = cur->next;
+    }
+    mean = sum / n;
+    mean2 = sum2 / n;
+    variance = mean2 - mean*mean;
+    return variance;
+}
 void QueuePop(Queue* pq)//队列特性  头删
 {
     //一个节点

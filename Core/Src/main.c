@@ -71,9 +71,11 @@ void SystemClock_Config(void);
 _Bool initFlag = 0;
 _Bool crossFlag = 0;
 _Bool roundaboutFlag = 0;
+_Bool forkFlag = 0;
 short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
+
 float adcRawBuffer[5] = {0};
 float middleValue[10] = {0};
 int Uart1_Rx_Cnt = 0;
@@ -281,7 +283,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             }
         }
         //进入分叉路口
-
+        //这边的方差的值正确吗？
+        if (QueueVariance(&middleValueQueue)>=100)
+        {
+            if (forkFlag==0)
+            {
+                forkFlag = 1;
+                //执行进入分叉路口1的处理
+            }
+            else
+            {
+                forkFlag = 0;
+                //执行进入分叉路口2的处理
+            }
+        }
 
 
     }
