@@ -8,14 +8,18 @@
 #define KP 1
 #define KI 0
 #define KD 0.5
-#define A 1
+#define A 1.0
 #define B 0
 #define C 0
 //PID控制器
+
 typedef struct {
     float kp;
     float ki;
     float kd;
+    float a;
+    float b;
+    float c;
     float setpoint;
     float error;
     float last_error;
@@ -24,7 +28,7 @@ typedef struct {
     float output;
 } PID;
 //PID初始化
-void PID_init(PID *pid, float kp, float ki, float kd, float setpoint);
+void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint);
 //PID计算
 float PID_calculate(PID *pid, float input);
 //滚动滤波算法

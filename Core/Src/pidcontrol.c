@@ -4,7 +4,7 @@
 
 #include "pidcontrol.h"
 
-void PID_init(PID *pid, float kp, float ki, float kd, float setpoint) {
+void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint) {
     pid->kp = kp;
     pid->ki = ki;
     pid->kd = kd;
