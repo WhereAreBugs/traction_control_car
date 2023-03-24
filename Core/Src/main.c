@@ -89,19 +89,18 @@ float speed = 0;
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+int main(void) {
+    /* USER CODE BEGIN 1 */
 //Q: 请问adrc算法的数学原理是什么？
 
-  /* USER CODE END 1 */
+    /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE BEGIN Init */
+    /* USER CODE BEGIN Init */
     RollingFilter filter0;
     float *data0 = malloc(sizeof(float) * 10);
     slideFilteringInit(&filter0, data0, 10);
@@ -117,25 +116,25 @@ int main(void)
     RollingFilter filter4;
     slideFilteringInit(&filter4, middleValue, 10);
 
-  /* USER CODE END Init */
+    /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+    /* Configure the system clock */
+    SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
     RetargetInit(&huart1);
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
-  /* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
-  MX_USART1_UART_Init();
-  /* USER CODE BEGIN 2 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_DMA_Init();
+    MX_ADC1_Init();
+    MX_TIM2_Init();
+    MX_TIM3_Init();
+    MX_TIM4_Init();
+    MX_USART1_UART_Init();
+    /* USER CODE BEGIN 2 */
     HAL_ADCEx_Calibration_Start(&hadc1); // 启动ADC校准
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 5); // 启动ADC采样
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动PWM输出
@@ -149,17 +148,16 @@ int main(void)
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
     QueueInit(&middleValueQueue);
-  /* USER CODE END 2 */
+    /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
 
     while (1) {
         //处理采集回来的adc数据
         //其中adc_value[0]和adc_value[1]是左侧的数据，adc_value[2]和adc_value[3]是右侧的数据
         //采用滚动均值滤波算法进行处理,并计算左右两侧的差值
-        if (initFlag)
-        {
+        if (initFlag) {
             servo_control(+50);
             HAL_Delay(500);
             servo_control(0);
@@ -175,9 +173,9 @@ int main(void)
                                                (piddata.a * (dat0 + dat3) + fabsf(piddata.c * (dat1 - dat2))));
         //输出PWM
         __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, result);
-    /* USER CODE END WHILE */
+        /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+        /* USER CODE BEGIN 3 */
         //Q: 位置式PID和增量式PID的区别？
         //A: 位置式PID是根据当前位置和目标位置计算出需要的增量，然后再加上当前位置，得到目标位置
         //   增量式PID是根据当前位置和目标位置计算出需要的增量，然后直接加上当前位置，得到目标位置
@@ -189,57 +187,53 @@ int main(void)
         //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
         //A: 1/144HZ=6.94ms
     }
-  /* USER CODE END 3 */
+    /* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+void SystemClock_Config(void) {
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /** Initializes the RCC Oscillators according to the specified parameters
+    * in the RCC_OscInitTypeDef structure.
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+    }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                  | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+        Error_Handler();
+    }
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+        Error_Handler();
+    }
 
-  /** Enables the Clock Security System
-  */
-  HAL_RCC_EnableCSS();
+    /** Enables the Clock Security System
+    */
+    HAL_RCC_EnableCSS();
 }
 
 /* USER CODE BEGIN 4 */
@@ -248,50 +242,40 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         //采用队列的方式保存ADC的值
         QueuePush(&middleValueQueue, middleResult);
         middleValueCount++;
-        if (middleValueCount>=5)
-        {
+        if (middleValueCount >= 5) {
             QueuePop(&middleValueQueue);
             middleValueCount -= 1;
         }
-        if (QueueBack(&middleValueQueue)<=10)
-        //处在十字路口
+        if (QueueBack(&middleValueQueue) <= 10)
+            //处在十字路口
         {
-            if (crossFlag==0)
-            {
+            if (crossFlag == 0) {
                 crossFlag = 1;
                 //执行进入十字路口的处理
-            }
-            else
-            {
+            } else {
                 crossFlag = 0;
                 //执行离开十字路口的处理
             }
         }
-        if (QueueBack(&middleValueQueue)<=2* QueueGet(&middleValueQueue,middleValueCount-1)+10 && QueueBack(&middleValueQueue)>=2* QueueGet(&middleValueQueue,middleValueCount-1)-10)
-        //处在环岛区域
+        if (QueueBack(&middleValueQueue) <= 2 * QueueGet(&middleValueQueue, middleValueCount - 1) + 10 &&
+            QueueBack(&middleValueQueue) >= 2 * QueueGet(&middleValueQueue, middleValueCount - 1) - 10)
+            //处在环岛区域
         {
-            if (roundaboutFlag==0)
-            {
+            if (roundaboutFlag == 0) {
                 roundaboutFlag = 1;
                 //执行进入环岛区域的处理
-            }
-            else
-            {
+            } else {
                 roundaboutFlag = 0;
                 //执行离开环岛区域的处理
             }
         }
         //进入分叉路口
         //这边的方差的值正确吗？
-        if (QueueVariance(&middleValueQueue)>=100)
-        {
-            if (forkFlag==0)
-            {
+        if (QueueVariance(&middleValueQueue) >= 100) {
+            if (forkFlag == 0) {
                 forkFlag = 1;
                 //执行进入分叉路口1的处理
-            }
-            else
-            {
+            } else {
                 forkFlag = 0;
                 //执行进入分叉路口2的处理
             }
@@ -300,18 +284,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
     }
 }
+
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
     if (GPIO_Pin == BEED_Pin) {
         stopFlag++;
-        if (stopFlag>=2)
-        {
+        if (stopFlag >= 2) {
             //执行侧方位停车
         }
     }
 
 }
+
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err34-c"
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     if (Uart1_Rx_Cnt >= RXBUFFERSIZE)  //溢出判断·
@@ -326,101 +312,67 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
         printf("开始处理数据");
         if (RxBuffer[Uart1_Rx_Cnt - 1] == '#') //判断结束位
         {
-            if(strstr(RxBuffer,"stop#")!=NULL)
-            { // NOLINT(bugprone-branch-clone)
+            if (strstr(RxBuffer, "stop#") != NULL) { // NOLINT(bugprone-branch-clone)
                 //执行停止-推荐让speed为0
 
-            }
-            else if(strstr(RxBuffer,"setKP")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "setKP") != NULL) {
                 //修改PID参数-比例系数
-                if (sscanf(RxBuffer,"setKP%f#",&piddata.kd)!=1)
-                {
+                if (sscanf(RxBuffer, "setKP%f#", &piddata.kd) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
-            }
-            else if(strstr(RxBuffer,"setKI")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "setKI") != NULL) {
                 //修改PID参数-积分系数
-                if (sscanf(RxBuffer,"setKI%f#",&piddata.ki)!=1)
-                {
+                if (sscanf(RxBuffer, "setKI%f#", &piddata.ki) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
-            }
-            else if(strstr(RxBuffer,"setKD")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "setKD") != NULL) {
                 //修改PID参数-微分系数
-                if (sscanf(RxBuffer,"setKD%f#",&piddata.kd)!=1)
-                {
+                if (sscanf(RxBuffer, "setKD%f#", &piddata.kd) != 1) {
                     printf("数据错误\n");
-                }
-                else
-                {
+                } else {
                     printf("数据正确\n");
                 }
-            }
-            else if (strstr(RxBuffer,"setA")!=NULL)
-            {
-                if (sscanf(RxBuffer,"setA%f#",&piddata.a)!=1)
-                {
+            } else if (strstr(RxBuffer, "setA") != NULL) {
+                if (sscanf(RxBuffer, "setA%f#", &piddata.a) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
-            }
-            else if (strstr(RxBuffer,"setB")!=NULL)
-            {
-                if (sscanf(RxBuffer,"setB%f#",&piddata.b)!=1)
-                {
+            } else if (strstr(RxBuffer, "setB") != NULL) {
+                if (sscanf(RxBuffer, "setB%f#", &piddata.b) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
 
-            }
-            else if (strstr(RxBuffer,"setC")!=NULL)
-            {
-                if (sscanf(RxBuffer,"setC%f#",&piddata.c)!=1)
-                {
+            } else if (strstr(RxBuffer, "setC") != NULL) {
+                if (sscanf(RxBuffer, "setC%f#", &piddata.c) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
 
-            }
-            else if(strstr(RxBuffer,"setSpeed")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "setSpeed") != NULL) {
                 //修改速度
-                if (sscanf(RxBuffer,"setSpeed%f#",&speed)!=1)
-                {
+                if (sscanf(RxBuffer, "setSpeed%f#", &speed) != 1) {
                     printf("数据错误\n");
-                } else
-                {
+                } else {
                     printf("数据正确\n");
                 }
-            }
-            else if(strstr(RxBuffer,"start")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "start") != NULL) {
                 // 开始运行
 
-            } else if (strstr(RxBuffer,"what")!=NULL)
-            {
+            } else if (strstr(RxBuffer, "what") != NULL) {
                 //返回当前的参数
                 char buffer[100];
-                sprintf(buffer,"speed:%f#kp:%f#ki:%f#kd:%f#a:%f#b:%f#c:%f#",speed,piddata.kp,piddata.ki,piddata.kd,piddata.a,piddata.b,piddata.c);
+                sprintf(buffer, "speed:%f#kp:%f#ki:%f#kd:%f#a:%f#b:%f#c:%f#", speed, piddata.kp, piddata.ki, piddata.kd,
+                        piddata.a, piddata.b, piddata.c);
                 HAL_UART_Transmit(&huart1, (uint8_t *) buffer, strlen(buffer), 0xFFFF);
-            }
-            else
-            {
+            } else {
                 //数据错误
                 HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误", 12, 0xFFFF);
             }
@@ -432,6 +384,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &RxBuffer, 1);   //再开启接收中断
 }
+
 #pragma clang diagnostic pop
 
 /* USER CODE END 4 */
@@ -440,15 +393,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
+void Error_Handler(void) {
+    /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1) {
 
     }
-  /* USER CODE END Error_Handler_Debug */
+    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
