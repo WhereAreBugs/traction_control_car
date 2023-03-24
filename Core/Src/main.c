@@ -44,7 +44,7 @@
 /* USER CODE BEGIN PD */
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
-#define RXBUFFERSIZE 128
+#define RXBUFFERSIZE 32
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,6 +80,8 @@ int Uart1_Rx_Cnt = 0;
 int middleValueCount = 0;
 Queue middleValueQueue;
 float middleResult = 0;
+PID piddata;
+float speed = 0;
 /* USER CODE END 0 */
 
 /**
@@ -142,7 +144,6 @@ int main(void)
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_Base_Start_IT(&htim4); // 启动定时器4中断
     //初始化PID
-    PID piddata;
     PID_init(&piddata, KP, KI, KD, 0);
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
@@ -290,7 +291,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
         stopFlag++;
         if (stopFlag>=2)
         {
-            //执行倒车入库
+            //执行侧方位停车
         }
     }
 
@@ -307,9 +308,50 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     } else {
         RxBuffer[Uart1_Rx_Cnt++] = rxBuffer;   //接收数据转存
         printf("开始处理数据");
-        if ((RxBuffer[Uart1_Rx_Cnt - 1] == '#') || (RxBuffer[Uart1_Rx_Cnt - 2] == '#')) //判断结束位
+        if (RxBuffer[Uart1_Rx_Cnt - 1] == '#') //判断结束位
         {
-            printf("Prossing Data...\n");
+            if(strstr(RxBuffer,"stop#")!=NULL)
+            {
+                //执行停止-推荐让speed为0
+            }
+            else if(strstr(RxBuffer,"setKP")!=NULL)
+            {
+                //修改PID参数-比例系数
+                if (sscanf(RxBuffer,"setKP%f#",&piddata.kd)!=1)
+                {
+                    printf("数据错误");
+                }
+            }
+            else if(strstr(RxBuffer,"setKI")!=NULL)
+            {
+                //修改PID参数-积分系数
+                if (sscanf(RxBuffer,"setKI%f#",&piddata.ki)!=1)
+                {
+                    printf("数据错误");
+                }
+            }
+            else if(strstr(RxBuffer,"setKD")!=NULL)
+            {
+                //修改PID参数-微分系数
+                if (sscanf(RxBuffer,"setKD%f#",&piddata.kd)!=1)
+                {
+                    printf("数据错误");
+                }
+            }
+            else if(strstr(RxBuffer,"setSpeed")!=NULL)
+            {
+                //修改速度
+                if (sscanf(RxBuffer,"setSpeed%f#",&speed)!=1)
+                {
+                    printf("数据错误");
+                }
+            }
+            else if(strstr(RxBuffer,"start")!=NULL)
+            {
+                // 开始运行
+
+            }
+
             Uart1_Rx_Cnt = 0;
             memset(RxBuffer, 0x00, sizeof(RxBuffer)); //清空数组
         }
@@ -317,7 +359,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &RxBuffer, 1);   //再开启接收中断
 }
-#pragma clang diagnostic pop
+
 /* USER CODE END 4 */
 
 /**
