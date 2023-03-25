@@ -30,7 +30,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "relocated.h"
+//#include "relocated.h" //重定向printf到串口
 #include "servo.h"
 #include "queue.h"
 #include "stringProcess.h"
@@ -145,6 +145,7 @@ int main(void)
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_Base_Start_IT(&htim4); // 启动定时器4中断
+
     //初始化PID
     PID_init(&piddata, KP, KI, KD, A, B, C, 0);
     // 位置式PID
@@ -291,7 +292,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     }
 }
 
-void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     if (GPIO_Pin == BEED_Pin) {
         stopFlag++;
         if (stopFlag >= 2) {
@@ -319,11 +320,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
         HAL_UART_Transmit(&huart1, (uint8_t *) "开始处理数据", 12, 0xFFFF);
         if (RxBuffer[Uart1_Rx_Cnt - 1] == '#') //判断结束位
         {
-            if (strstr(RxBuffer, "stop#")!=NULL) { // NOLINT(bugprone-branch-clone)
+            if (strstr(RxBuffer, "stop") != NULL) { // NOLINT(bugprone-branch-clone)
                 //执行停止-推荐让speed为0
 
-            }
-            else if (strstr(RxBuffer, "setKP")!=NULL) {
+            } else if (strstr(RxBuffer, "setKP") != NULL) { // NOLINT(bugprone-branch-clone)
                 //修改PID参数-比例系数
                 if (!getSet(RxBuffer, 5, &piddata.kd)) {
 //                    printf("数据错误\n");
@@ -332,8 +332,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 //                    printf("数据正确\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
-            }
-            else if (strstr(RxBuffer, "setKI")!=NULL) {
+            } else if (strstr(RxBuffer, "setKI") != NULL) {
                 //修改PID参数-积分系数
                 if (!getSet(RxBuffer, 5, &piddata.ki)) {
 //                    printf("数据错误\n");
@@ -342,7 +341,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 //                    printf("数据正确\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
-            } else if (strstr(RxBuffer, "setKD")!=NULL) {
+            } else if (strstr(RxBuffer, "setKD") != NULL) {
                 //修改PID参数-微分系数
                 if (!getSet(RxBuffer, 5, &piddata.kd)) {
 //                    printf("数据错误\n");
@@ -352,7 +351,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
 
-            } else if (strstr(RxBuffer, "setA")!=NULL) {
+            } else if (strstr(RxBuffer, "setA") != NULL) {
                 if (!getSet(RxBuffer, 4, &piddata.a)) {
 //                    printf("数据错误\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
@@ -360,14 +359,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
-            } else if (strstr(RxBuffer, "setB")!=NULL) {
+            } else if (strstr(RxBuffer, "setB") != NULL) {
                 if (!getSet(RxBuffer, 4, &piddata.b)) {
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
                 } else {
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
 
-            } else if (strstr(RxBuffer, "setC")!=NULL) {
+            } else if (strstr(RxBuffer, "setC") != NULL) {
                 if (!getSet(RxBuffer, 4, &piddata.c)) {
 //                    printf("数据错误\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
@@ -375,7 +374,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
                 }
 
-            } else if (strstr(RxBuffer, "setSpeed")!=NULL) {
+            } else if (strstr(RxBuffer, "setSpeed") != NULL) {
                 //修改速度
                 if (!getSet(RxBuffer, 4, &speed)) {
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
@@ -385,26 +384,38 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             } else if (strstr(RxBuffer, "start") != NULL) {
                 // 开始运行
 
-            }
-            else if (strstr(RxBuffer, "what") != NULL) {
+            } else if (strstr(RxBuffer, "what") != NULL) {
                 //返回当前的参数
                 HAL_UART_Transmit(&huart1, (uint8_t *) "当前的参数:", 11, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "speed:", 6, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &speed,    sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &speed, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "a:", 2, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.a, sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.a, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "b:", 2, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.b, sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.b, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "c:", 2, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.c, sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.c, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "kp:", 3, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.kp, sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.kp, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "ki:", 3, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.ki, sizeof (float), 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.ki, sizeof(float), 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "kd:", 3, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.kd, sizeof (float), 0xFFFF);
-            }
-            else {
+                HAL_UART_Transmit(&huart1, (uint8_t *) &piddata.kd, sizeof(float), 0xFFFF);
+            } else if (strstr(RxBuffer, "help") != NULL) {
+                //显示帮助信息
+                HAL_UART_Transmit(&huart1, (uint8_t *) "帮助信息:", 9, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setSpeed:设置速度", 17, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setA:设置a", 10, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setB:设置b", 10, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setC:设置c", 10, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKp:设置kp", 12, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKi:设置ki", 12, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKd:设置kd", 12, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "start:开始运行", 13, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "what:返回当前的参数", 18, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "help:显示帮助信息", 16, 0xFFFF);
+
+            } else {
                 //数据错误
                 HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误", 12, 0xFFFF);
             }
