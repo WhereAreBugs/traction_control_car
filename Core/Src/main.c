@@ -57,8 +57,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
 float adc_value[5] = {0}; // 保存ADC采样值
 /* USER CODE END PV */
 
