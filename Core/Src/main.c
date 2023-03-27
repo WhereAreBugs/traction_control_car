@@ -366,8 +366,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 }
 
             } else if (strstr(RxBuffer, "setC") != NULL) {
-//                if (!getSet(RxBuffer, 4, &piddata.c)) {
-                    if(sscanf("setC%f",RxBuffer,&piddata.c)!=1){
+                if (!getSet(RxBuffer, 4, &piddata.c)) {
+//                    if(sscanf("setC%f",RxBuffer,&piddata.c)!=1){
 //                    printf("数据错误\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
                 } else {
