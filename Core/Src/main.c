@@ -30,6 +30,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 //#include "relocated.h" //重定向printf到串口
 #include "servo.h"
 #include "queue.h"
@@ -287,8 +288,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
                 //执行进入分叉路口2的处理
             }
         }
-
-
     }
 }
 
@@ -367,7 +366,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 }
 
             } else if (strstr(RxBuffer, "setC") != NULL) {
-                if (!getSet(RxBuffer, 4, &piddata.c)) {
+//                if (!getSet(RxBuffer, 4, &piddata.c)) {
+                    if(sscanf("setC%f",RxBuffer,&piddata.c)!=1){
 //                    printf("数据错误\n");
                     HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
                 } else {

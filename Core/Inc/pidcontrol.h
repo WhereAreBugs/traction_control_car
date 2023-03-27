@@ -4,14 +4,18 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-//PID调参
 #define KP 1
 #define KI 0
 #define KD 0.5
-#define A 1.0
-#define B 0
+//PID的参数
+#define A 1
+#define B 1
 #define C 0
-//PID控制器
+//差比和公式的参数
+#define Fuzzy_KP 1
+#define Fuzzy_KI 0
+#define Fuzzy_KD 0.5
+//模糊PID的参数
 
 typedef struct {
     float kp;
@@ -52,6 +56,28 @@ typedef struct
   ******************************************************************************
   */
 float KalmanFilter(float inData);
+//滑动平均滤波算法
 void slideFilteringInit(RollingFilter *indata, float *pBuf, int bufSize);
 float slideFilteringCalculate(RollingFilter *indata, float inData);
+//模糊PID
+typedef struct {
+    float kp;
+    float ki;
+    float kd;
+    float setpoint;
+    float error;
+    float last_error;
+    float integral;
+    float derivative;
+    float output;
+} FuzzyPID;
+//模糊PID初始化
+void FuzzyPID_init(FuzzyPID *pid, float kp, float ki, float kd, float setpoint);
+//模糊PID计算
+float FuzzyPID_calculate(FuzzyPID *pid, float input);
+//模糊PID调参
+//Q: 模糊PID与PID的区别
+//A: 模糊PID是PID的一种改进, 通过模糊控制, 使得PID的控制更加平滑, 更加稳定, 但是模糊PID的计算量更大, 速度更慢
+
+
 #endif //SMART_PIDCONTROL_H
