@@ -175,7 +175,8 @@ int main(void)
         float result = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
                                                (piddata.a * (dat0 + dat3) + fabsf(piddata.c * (dat1 - dat2))));
         //输出PWM
-        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, result);
+        servo_control(result);
+        speed_contorl(speed);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -259,9 +260,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             if (crossFlag == 0) {
                 crossFlag = 1;
                 //执行进入十字路口的处理
+                HAL_Delay(10);
             } else {
                 crossFlag = 0;
                 //执行离开十字路口的处理
+                HAL_Delay(10);
             }
         }
         if (QueueBack(&middleValueQueue) <= 2 * QueueGet(&middleValueQueue, middleValueCount - 1) + 10 &&
@@ -270,7 +273,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         {
             if (roundaboutFlag == 0) {
                 roundaboutFlag = 1;
-                //执行进入环岛区域的处理
+                servo_control(+30.0f);
             } else {
                 roundaboutFlag = 0;
                 //执行离开环岛区域的处理
@@ -282,9 +285,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             if (forkFlag == 0) {
                 forkFlag = 1;
                 //执行进入分叉路口1的处理
+                servo_control(+30.0f);
+                HAL_Delay(10);
             } else {
                 forkFlag = 0;
                 //执行进入分叉路口2的处理
+                servo_control(-30.0f);
+                HAL_Delay(10);
             }
         }
     }
@@ -294,7 +301,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     if (GPIO_Pin == BEED_Pin) {
         stopFlag++;
         if (stopFlag >= 2) {
-            //执行侧方位停车
+            servo_control(30.0f);
+            HAL_Delay(10);
+            servo_control(-20.0f);
+            HAL_Delay(10);
+            servo_control(0.0f);
+            speed = 0;
         }
     }
 
@@ -305,7 +317,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
-    if (Uart1_Rx_Cnt >= RXBUFFERSIZE)  //溢出判断·
+    if (Uart1_Rx_Cnt >= RXBUFFERSIZE)  //溢出判断?
     {
         UNUSED(huart);
         Uart1_Rx_Cnt = 0;
@@ -398,17 +410,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
             } else if (strstr(RxBuffer, "help") != NULL) {
                 //显示帮助信息
-                HAL_UART_Transmit(&huart1, (uint8_t *) "帮助信息:", 9, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setSpeed:设置速度", 17, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setA:设置a", 10, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setB:设置b", 10, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setC:设置c", 10, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setKp:设置kp", 12, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setKi:设置ki", 12, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "setKd:设置kd", 12, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "start:开始运行", 13, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "what:返回当前的参数", 18, 0xFFFF);
-                HAL_UART_Transmit(&huart1, (uint8_t *) "help:显示帮助信息", 16, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "帮助信息:\r\n", 16, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "stop:停止\r\n", 13, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "start:开始\r\n", 15, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setSpeed:设置速度\r\n", 24, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setA:设置a\r\n", 15, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setB:设置b\r\n", 15, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setC:设置c\r\n", 15, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKP:设置kp\r\n", 17, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKI:设置ki\r\n", 17, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "setKD:设置kd\r\n", 17, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "what:返回当前参数\r\n", 26, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "help:显示帮助信息\r\n", 26, 0xFFFF);
+
+
 
             } else {
                 //数据错误
