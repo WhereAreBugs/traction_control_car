@@ -309,40 +309,5 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 }
 
 /* USER CODE BEGIN 1 */
-void goon(void)//前进
-{
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_SET);
-}
-
-void advance(void)//后退
-{
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
-}
-void stop(void)//停止
-{
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
-
-}
-void SG90(unsigned char rate)
-{
-            __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, rate);
-}
-void WHEEL1(unsigned char rate)
-{
-            __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_1, rate);
-}
-void WHEEL2(unsigned char rate)
-{
-            __HAL_TIM_SetCompare(&htim4,TIM_CHANNEL_1, rate);
-}
 
 /* USER CODE END 1 */
