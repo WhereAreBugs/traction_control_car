@@ -104,5 +104,37 @@ float FuzzyPID_calculate(FuzzyPID *pid, float input)
     return pid->output;
 }
 
+void L1_adaptive_PID_init(L1_adaptive_PID *pid, float kp, float ki, float kd, float setpoint)
+{
+    pid->kp = kp; //默认Kp
+    pid->ki = ki;
+    pid->kd = kd;
+    pid->setpoint = setpoint;
+    pid->error = 0;
+    pid->last_error = 0;
+    pid->integral = 0;
+    pid->derivative = 0;
+    pid->output = 0;
+}
+float L1_adaptive_PID_calculate(L1_adaptive_PID *pid, float input)
+{
+    //计算模糊的Kp
+    float Kp;
+    if (pid->error > 0)
+    {
+        Kp = pid->kp * (1 - pid->error / pid->setpoint);
+    }
+    else
+    {
+        Kp = pid->kp * (1 + pid->error / pid->setpoint);
+    }
+
+    pid->error = pid->setpoint - input; //误差
+    pid->integral += pid->error; //积分
+    pid->derivative = pid->error - pid->last_error; //微分
+    pid->output = Kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
+    pid->last_error = pid->error; //更新误差
+    return pid->output;
+}
 
 

@@ -83,6 +83,12 @@ Queue middleValueQueue;
 float middleResult = 0;
 PID piddata;
 float speed = 0;
+
+//过滤后的数据
+float dat0 = 0;
+float dat1 = 0;
+float dat2 = 0;
+float dat3 = 0;
 /* USER CODE END 0 */
 
 /**
@@ -151,6 +157,8 @@ int main(void)
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
     QueueInit(&middleValueQueue);
+    //WARNING: 以下代码将会禁用全局的速度
+    speed = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -166,10 +174,10 @@ int main(void)
             servo_control(0);
             initFlag = 0;
         }
-        float dat0 = slideFilteringCalculate(&filter0, adc_value[0]);
-        float dat1 = slideFilteringCalculate(&filter1, adc_value[1]);
-        float dat2 = slideFilteringCalculate(&filter2, adc_value[2]);
-        float dat3 = slideFilteringCalculate(&filter3, adc_value[3]);
+        dat0 = slideFilteringCalculate(&filter0, adc_value[0]);
+        dat1 = slideFilteringCalculate(&filter1, adc_value[1]);
+        dat2 = slideFilteringCalculate(&filter2, adc_value[2]);
+        dat3 = slideFilteringCalculate(&filter3, adc_value[3]);
         middleResult = slideFilteringCalculate(&filter4, adc_value[4]);
         //计算PID
         float result = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
@@ -247,7 +255,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM4) {
-        //采用队列的方式保存ADC的值
+        //采用队列的方式保存中间传感器经过过滤后的值
         QueuePush(&middleValueQueue, middleResult);
         middleValueCount++;
         if (middleValueCount >= 5) {
@@ -301,6 +309,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     if (GPIO_Pin == BEED_Pin) {
         stopFlag++;
         if (stopFlag >= 2) {
+            // 停车
             servo_control(30.0f);
             HAL_Delay(10);
             servo_control(-20.0f);
@@ -333,7 +342,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
         if (RxBuffer[Uart1_Rx_Cnt-1] == '#') //判断结束位
         {
             if (strstr(RxBuffer, "stop") != NULL) {
-                //执行停止-推荐让speed为0
+                //执行停车操作
+                servo_control(30.0f);
+                HAL_Delay(10);
+                servo_control(-20.0f);
+                HAL_Delay(10);
+                servo_control(0.0f);
+                speed = 0;
+
 
             } else if (strstr(RxBuffer, "setKP") != NULL) { // NOLINT(bugprone-branch-clone)
                 //修改PID参数-比例系数
@@ -422,10 +438,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 HAL_UART_Transmit(&huart1, (uint8_t *) "setKD:设置kd\r\n", 17, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "what:返回当前参数\r\n", 26, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "help:显示帮助信息\r\n", 26, 0xFFFF);
-
-
-
-            } else {
+            }
+            else if (strstr(RxBuffer, "data") != NULL) {
+                // 获取当前传感器数据
+                printf("当前传感器数据为:\r\n");
+                printf("左侧传感器1:%f\r\n", dat0);
+                printf("左侧传感器2:%f\r\n", dat1);
+                printf("右侧传感器1:%f\r\n", dat2);
+                printf("右侧传感器2:%f\r\n", dat3);
+                printf("中间传感器:%f\r\n", middleResult);
+            }
+            else {
                 //数据错误
                 HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误", 12, 0xFFFF);
             }
