@@ -44,7 +44,15 @@ void speed_control(float speed)
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
     }
-    speed = speed + 1900;
+    if (speed < 0)
+    {
+        speed = -speed;
+    }
+    if (speed > 70)
+    {
+        speed = 70;
+    }
+    speed = speed*20;
     __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, speed);
     __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_2, speed);
 }
