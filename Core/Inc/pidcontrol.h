@@ -16,6 +16,24 @@
 #define Fuzzy_KI 0
 #define Fuzzy_KD 0.5
 //模糊PID的参数
+//L1_adaptive
+#define L1_KP 1
+#define L1_KI 0
+#define L1_KD 0.5
+//L1自适应PID的参数
+//PID结构体
+typedef struct {
+    float kp;
+    float ki;
+    float kd;
+    float setpoint;
+    float error;
+    float last_error;
+    float integral;
+    float derivative;
+    float output;
+} L1_adaptive_PID;
+
 
 typedef struct {
     float kp;
