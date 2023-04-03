@@ -3,13 +3,17 @@
 //
 
 #include "servo.h"
+#include "main.h"
+#include "tim.h"
 void servo_control(float angle)
 /*
- * 电机控制函数
+ * 舵机控制函数
  * 输入参数：角度
  * 正数为右转的角度，负数为左转的角度
  */
-{}
+{
+    __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, angle);
+}
 void speed_contorl(float speed)
 /*
  * 电机控制函数
@@ -18,4 +22,27 @@ void speed_contorl(float speed)
  * 0为停止
  * 100为最大速度
  */
-{}
+{
+    if (speed > 0)
+    {
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_SET);
+    }else if (speed < 0)
+    {
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
+    }
+    else
+    {
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
+    }
+    __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_1, speed);
+    __HAL_TIM_SetCompare(&htim4,TIM_CHANNEL_1, speed);
+}
