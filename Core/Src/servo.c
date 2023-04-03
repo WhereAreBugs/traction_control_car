@@ -14,7 +14,7 @@ void servo_control(float angle)
 {
     __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, angle);
 }
-void speed_contorl(float speed)
+void speed_control(float speed)
 /*
  * 电机控制函数
  * 输入参数：速度

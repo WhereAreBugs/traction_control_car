@@ -176,7 +176,7 @@ int main(void)
                                                (piddata.a * (dat0 + dat3) + fabsf(piddata.c * (dat1 - dat2))));
         //输出PWM
         servo_control(result);
-        speed_contorl(speed);
+        speed_control(speed);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

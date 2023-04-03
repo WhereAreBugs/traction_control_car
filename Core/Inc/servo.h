@@ -6,5 +6,5 @@
 #define SMART_SERVO_H
 //控制电机角度
 void servo_control(float angle);
-void speed_contorl(float speed);
+void speed_control(float speed);
 #endif //SMART_SERVO_H
