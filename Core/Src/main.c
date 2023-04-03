@@ -158,7 +158,7 @@ int main(void)
     // 数据1，2是左侧，3，4是右侧
     QueueInit(&middleValueQueue);
     //WARNING: 以下代码将会禁用全局的速度
-    speed = 0;
+    speed = 100;
   /* USER CODE END 2 */
 
   /* Infinite loop */
