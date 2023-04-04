@@ -12,6 +12,16 @@ void servo_control(float angle)
  * 正数为右转的角度，负数为左转的角度
  */
 {
+
+    if (angle > 30)
+    {
+        angle = 30;
+    }
+    else if (angle < -30)
+    {
+        angle = -30;
+    }
+    angle = 1900 + angle * 9 / 5;
     __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3, angle);
 }
 void speed_control(float speed)
