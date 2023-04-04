@@ -83,12 +83,13 @@ Queue middleValueQueue;
 float middleResult = 0;
 PID piddata;
 float speed = 0;
-
+_Bool auto_mode = 1;
 //过滤后的数据
 float dat0 = 0;
 float dat1 = 0;
 float dat2 = 0;
 float dat3 = 0;
+float angle = 0;
 /* USER CODE END 0 */
 
 /**
@@ -148,6 +149,7 @@ int main(void)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空比
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500);
+    __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3, 1800);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_Base_Start_IT(&htim4); // 启动定时器4中断
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
@@ -159,6 +161,7 @@ int main(void)
     QueueInit(&middleValueQueue);
     //WARNING: 以下代码将会禁用全局的速度
     speed = 100;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -174,16 +177,18 @@ int main(void)
             servo_control(0);
             initFlag = 0;
         }
+        if (auto_mode){
         dat0 = slideFilteringCalculate(&filter0, adc_value[0]);
         dat1 = slideFilteringCalculate(&filter1, adc_value[1]);
         dat2 = slideFilteringCalculate(&filter2, adc_value[2]);
         dat3 = slideFilteringCalculate(&filter3, adc_value[3]);
         middleResult = slideFilteringCalculate(&filter4, adc_value[4]);
         //计算PID
-        float result = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
+        angle = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
                                                (piddata.a * (dat0 + dat3) + fabsf(piddata.c * (dat1 - dat2))));
+        }
         //输出PWM
-        servo_control(result);
+        servo_control(angle);
         speed_control(speed);
     /* USER CODE END WHILE */
 
@@ -420,7 +425,42 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("ki:%f\r\n", piddata.ki);
                 printf("kd:%f\r\n", piddata.kd);
 
-            } else if (strstr(RxBuffer, "help") != NULL) {
+            }
+            else if (strstr(RxBuffer,"SetAutoMode"))
+            {
+                //设置自动模式
+                auto_mode = !auto_mode;
+                if (auto_mode)
+                {
+                    HAL_UART_Transmit(&huart1, (uint8_t *) "自动模式已开启\r\n", 16, 0xFFFF);
+                }
+                else
+                {
+                    HAL_UART_Transmit(&huart1, (uint8_t *) "自动模式已关闭\r\n", 16, 0xFFFF);
+                }
+
+            }
+            else if (strstr(RxBuffer,"SetAngle"))
+            {
+                //判断自动模式是否关闭
+                if (auto_mode)
+                {
+                    HAL_UART_Transmit(&huart1, (uint8_t *) "自动模式已开启,请先关闭自动模式\r\n", 32, 0xFFFF);
+                    return;
+                }
+
+                //设置角度
+                if (!getSet(RxBuffer, 8, &angle))
+
+                {
+                    HAL_UART_Transmit(&huart1, (uint8_t *) "数据错误\n", 9, 0xFFFF);
+                }
+                else
+                {
+                    HAL_UART_Transmit(&huart1, (uint8_t *) "数据正确\n", 9, 0xFFFF);
+                }
+            }
+                else if (strstr(RxBuffer, "help") != NULL) {
                 //显示帮助信息
                 HAL_UART_Transmit(&huart1, (uint8_t *) "帮助信息:\r\n", 16, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "stop:停止\r\n", 13, 0xFFFF);
@@ -433,6 +473,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 HAL_UART_Transmit(&huart1, (uint8_t *) "setKI:设置ki\r\n", 17, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "setKD:设置kd\r\n", 17, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "what:返回当前参数\r\n", 26, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "SetAutoMode:设置自动模式\r\n", 30, 0xFFFF);
+                HAL_UART_Transmit(&huart1, (uint8_t *) "SetAngle:设置角度\r\n", 26, 0xFFFF);
                 HAL_UART_Transmit(&huart1, (uint8_t *) "help:显示帮助信息\r\n", 26, 0xFFFF);
             }
             else if (strstr(RxBuffer, "data") != NULL) {
