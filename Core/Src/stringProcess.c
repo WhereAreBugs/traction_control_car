@@ -5,7 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "stringProcess.h"
-
+#include <stdio.h>
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "readability-non-const-parameter"
 /*
@@ -70,6 +70,7 @@ int getSet(char *str, uint8_t count, float *pDouble) {
         }
     }
     *pDouble = (float) (sign * result);
+    printf("SetResult: %f\r\n", *pDouble);
     return 1;
 }
 
