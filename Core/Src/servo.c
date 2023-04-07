@@ -13,15 +13,15 @@ void servo_control(float angle)
  */
 {
 
-    if (angle > 30)
+    if (angle > 20)
     {
-        angle = 30;
+        angle = 20;
     }
-    else if (angle < -30)
+    else if (angle < -20)
     {
-        angle = -30;
+        angle = -20;
     }
-    angle = 1900 + angle * 9 / 5;
+    angle = 1950 - angle * 9 / 5;
     __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3, angle);
 }
 void speed_control(float speed)
@@ -39,20 +39,20 @@ void speed_control(float speed)
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_SET);
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_SET);
     }else if (speed < 0)
     {
-        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_SET);
     }
     else
     {
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOC,GPIO_PIN_15,GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_12,GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_RESET);
     }
     if (speed < 0)
     {

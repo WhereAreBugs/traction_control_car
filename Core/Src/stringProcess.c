@@ -25,6 +25,7 @@
 //}
 int getSet(char *str, uint8_t count, float *pDouble) {
     double result = 0.0; // the result
+    str+=count;
     int sign = 1;   // 1 for positive, -1 for negative
     if (*str == '-') {
         sign = -1; // negative
