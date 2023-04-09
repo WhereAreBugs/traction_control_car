@@ -77,6 +77,7 @@ Mcu.UserConstants=
 Mcu.UserName=STM32F103C8Tx
 MxCube.Version=6.8.0
 MxDb.Version=DB.6.0.80
+NVIC.ADC1_2_IRQn=true\:0\:0\:false\:false\:true\:true\:true\:true
 NVIC.BusFault_IRQn=true\:0\:0\:false\:false\:true\:false\:false\:false
 NVIC.DMA1_Channel1_IRQn=true\:0\:0\:false\:false\:true\:false\:true\:true
 NVIC.DebugMonitor_IRQn=true\:0\:0\:false\:false\:true\:false\:false\:false

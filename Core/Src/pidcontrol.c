@@ -8,6 +8,9 @@ void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c,
     pid->kp = kp;
     pid->ki = ki;
     pid->kd = kd;
+    pid->a = a;
+    pid->b = b;
+    pid->c = c;
     pid->setpoint = setpoint;
     pid->error = 0;
     pid->last_error = 0;
@@ -27,29 +30,33 @@ float PID_calculate(PID *pid, float input) {
 }
 
 
-void slideFilteringInit(RollingFilter *indata, float *pBuf, int bufSize) {
-    indata->pBuf = pBuf;
-    indata->bufSize = bufSize;
-    indata->index = 0;
-    indata->sum = 0;
+void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned char ucItemNum)
+{
+    filter->pBuf = pBuf;
+    filter->ucItemNum = ucItemNum;
+    filter->ucItemCnt = 0;
+    filter->ucItemIdx = 0;
+    filter->fSum = 0;
 }
 
-float slideFilteringCalculate(RollingFilter *indata, float inData) {
-    //滑动平均滤波
-    //滑动平均滤波器的原理是将一组数据按照一定的顺序排列，然后取中间的数据作为滤波后的数据。
-    //滑动平均滤波器的优点是简单，缺点是对于突变的数据不敏感。
-    //这里采用的队列滑动平均滤波器，队列长度为10
-    indata->sum -= indata->pBuf[indata->index];
-    indata->pBuf[indata->index] = inData;
-    indata->sum += indata->pBuf[indata->index];
-    indata->index++;
-    if (indata->index >= indata->bufSize) {
-        indata->index = 0;
+float RollingMeanFilter_calculate(RollingMeanFilter *filter, float input)
+{
+    float fRet = 0;
+    if (filter->ucItemCnt < filter->ucItemNum)
+    {
+        filter->ucItemCnt++;
     }
-    return indata->sum / (float)indata->bufSize;
-
+    filter->fSum -= filter->pBuf[filter->ucItemIdx];
+    filter->pBuf[filter->ucItemIdx] = input;
+    filter->fSum += input;
+    filter->ucItemIdx++;
+    if (filter->ucItemIdx >= filter->ucItemNum)
+    {
+        filter->ucItemIdx = 0;
+    }
+    fRet = filter->fSum / filter->ucItemCnt;
+    return fRet;
 }
-
 float KalmanFilter(float inData) {
     float R = 0.01f; //测量噪声协方差
     float Q = 0.0001f; //过程噪声协方差

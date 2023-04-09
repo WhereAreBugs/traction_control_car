@@ -28,7 +28,6 @@
 /* USER CODE BEGIN Includes */
 #include "pidcontrol.h"
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "relocated.h" //重定向printf到串口
@@ -57,7 +56,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-float adc_value[5] = {0}; // 保存ADC采样值
+uint16_t adc_value[5] = {0}; // 保存ADC采样值
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,21 +75,30 @@ short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
 
-float middleValue[10] = {0};
+//float middleValue[10] = {0};
 int Uart1_Rx_Cnt = 0;
 int middleValueCount = 0;
 Queue middleValueQueue;
 float middleResult = 0;
 PID piddata;
 float speed = 0;
-_Bool auto_mode = 0;
+_Bool auto_mode = 1;
 //过滤后的数据
 float dat0 = 0;
 float dat1 = 0;
 float dat2 = 0;
 float dat3 = 0;
 float angle = 0;
+//过滤算法缓冲区
+RollingMeanFilter da0, da1, da2, da3, da4;
 /* USER CODE END 0 */
+
+float N_fabs(float d) {
+    if (d<0) {
+        return -d;
+    }
+    return d;
+}
 
 /**
   * @brief  The application entry point.
@@ -109,21 +117,12 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-    RollingFilter filter0;
-    float *data0 = malloc(sizeof(float) * 10);
-    slideFilteringInit(&filter0, data0, 10);
-    RollingFilter filter1;
-    float *data1 = malloc(sizeof(float) * 10);
-    slideFilteringInit(&filter1, data1, 10);
-    RollingFilter filter2;
-    float *data2 = malloc(sizeof(float) * 10);
-    slideFilteringInit(&filter2, data2, 10);
-    RollingFilter filter3;
-    float *data3 = malloc(sizeof(float) * 10);
-    slideFilteringInit(&filter3, data3, 10);
-    RollingFilter filter4;
-    slideFilteringInit(&filter4, middleValue, 10);
-
+  float df0[10]={0},df1[10]={0},df2[10] = {0},df3[10] = {0},df4[10] = {0};
+  RollingMeanFilter_init(&da0,df0 ,10);
+  RollingMeanFilter_init(&da1,df1 ,10);
+  RollingMeanFilter_init(&da2,df2 ,10);
+  RollingMeanFilter_init(&da3,df3 ,10);
+  RollingMeanFilter_init(&da4,df4 ,10);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -143,7 +142,6 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
     HAL_ADCEx_Calibration_Start(&hadc1); // 启动ADC校准
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 5); // 启动ADC采样
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动PWM输出
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空比
@@ -177,14 +175,19 @@ int main(void)
             initFlag = 0;
         }
         if (auto_mode) {
-            dat0 = slideFilteringCalculate(&filter0, adc_value[0]);
-            dat1 = slideFilteringCalculate(&filter1, adc_value[1]);
-            dat2 = slideFilteringCalculate(&filter2, adc_value[2]);
-            dat3 = slideFilteringCalculate(&filter3, adc_value[3]);
-            middleResult = slideFilteringCalculate(&filter4, adc_value[4]);
+            HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 5); // 启动ADC采样
+            if (adc_value[0]>=4096||adc_value[0]<=0||adc_value[1]>=4096||adc_value[1]<=0||adc_value[2]>=4096||adc_value[2]<=0||adc_value[3]>=4096||adc_value[3]<=0||adc_value[4]>=4096||adc_value[4]<=0)
+            {
+                continue;
+            }
+            dat0 = RollingMeanFilter_calculate(&da0, adc_value[0]);
+            dat1 = RollingMeanFilter_calculate(&da1, adc_value[1]);
+            dat2 = RollingMeanFilter_calculate(&da2, adc_value[2]);
+            dat3 = RollingMeanFilter_calculate(&da3, adc_value[3]);
+            middleResult = RollingMeanFilter_calculate(&da4, adc_value[4]);
             //计算PID
             angle = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
-                                            (piddata.a * (dat0 + dat3) + fabsf(piddata.c * (dat1 - dat2))));
+                                            (piddata.a * (dat0 + dat3) + N_fabs((piddata.c * (dat1 - dat2)))));
         }else
         { HAL_Delay(10);}
         //输出PWM

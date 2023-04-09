@@ -10,7 +10,7 @@
 //PID的参数
 #define A 1
 #define B 1
-#define C 0
+#define C 1
 //差比和公式的参数
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0
@@ -53,15 +53,22 @@ typedef struct {
 void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint);
 //PID计算
 float PID_calculate(PID *pid, float input);
-//滚动滤波算法
-typedef struct
-{
-    float *pBuf; // 滤波缓冲区
-    int bufSize; // 缓冲区大小
-    int index; // 缓冲区索引
-    float sum; // 缓冲区和
-} RollingFilter;
-//卡尔曼滤波算法
+//滚动均值滤波算法
+typedef struct {
+    float *pBuf;
+    unsigned char ucItemNum;
+    unsigned char ucItemCnt;
+    unsigned char ucItemIdx;
+    float fSum;
+} RollingMeanFilter;
+//滚动均值滤波算法初始化
+void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned char ucItemNum);
+//滚动均值滤波算法计算
+float RollingMeanFilter_calculate(RollingMeanFilter *filter, float input);
+
+
+
+
 /**
   ******************************************************************************
   * @brief  卡尔曼滤波器 函数
@@ -75,8 +82,7 @@ typedef struct
   */
 float KalmanFilter(float inData);
 //滑动平均滤波算法
-void slideFilteringInit(RollingFilter *indata, float *pBuf, int bufSize);
-float slideFilteringCalculate(RollingFilter *indata, float inData);
+
 //模糊PID
 typedef struct {
     float kp;
