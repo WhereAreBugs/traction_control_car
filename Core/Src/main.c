@@ -56,7 +56,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t adc_value[5] = {0}; // 保存ADC采样值
+uint16_t adc_value[25] = {0}; // 保存ADC采样值
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,14 +91,8 @@ float dat3 = 0;
 float angle = 0;
 //过滤算法缓冲区
 RollingMeanFilter da0, da1, da2, da3, da4;
+float N_fabs(float d);
 /* USER CODE END 0 */
-
-float N_fabs(float d) {
-    if (d<0) {
-        return -d;
-    }
-    return d;
-}
 
 /**
   * @brief  The application entry point.
@@ -175,7 +169,7 @@ int main(void)
             initFlag = 0;
         }
         if (auto_mode) {
-            HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 5); // 启动ADC采样
+            HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 25); // 启动ADC采样
             if (adc_value[0]>=4096||adc_value[0]<=0||adc_value[1]>=4096||adc_value[1]<=0||adc_value[2]>=4096||adc_value[2]<=0||adc_value[3]>=4096||adc_value[3]<=0||adc_value[4]>=4096||adc_value[4]<=0)
             {
                 continue;
@@ -185,13 +179,17 @@ int main(void)
             dat2 = RollingMeanFilter_calculate(&da2, adc_value[2]);
             dat3 = RollingMeanFilter_calculate(&da3, adc_value[3]);
             middleResult = RollingMeanFilter_calculate(&da4, adc_value[4]);
+//                dat0 = adc_value[0];
+//            dat1 = adc_value[1];
+//            dat2 = adc_value[2];
+//            dat3 = adc_value[3];
+//            middleResult = adc_value[4];
+
             //计算PID
             angle = PID_calculate(&piddata, (piddata.a * (dat0 - dat3) + piddata.b * (dat1 - dat2)) /
                                             (piddata.a * (dat0 + dat3) + N_fabs((piddata.c * (dat1 - dat2)))));
-        }else
-        { HAL_Delay(10);}
+        }
         //输出PWM
-        servo_control(angle);
         speed_control(speed);
     /* USER CODE END WHILE */
 
@@ -257,7 +255,15 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+float N_fabs(float d) {
+    if (d<0)
+    {
+        return -d;
+    }
+    return d;
+}
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    servo_control(angle);
     if (htim->Instance == TIM4) {
         //采用队列的方式保存中间传感器经过过滤后的值
         QueuePush(&middleValueQueue, middleResult);
@@ -351,7 +357,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 speed = 0;
             } else if (strstr(RxBuffer, "setKP") != NULL) {
                 //修改PID参数-比例系数
-                getSet(RxBuffer, 5, &piddata.kd);
+                getSet(RxBuffer, 5, &piddata.kp);
 
             } else if (strstr(RxBuffer, "setKI") != NULL) {
                 //修改PID参数-积分系数
@@ -425,11 +431,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             } else if (strstr(RxBuffer, "data") != NULL) {
                 // 获取当前传感器数据
                 printf("当前传感器数据为:\r\n");
-                printf("左侧传感器1:%f\r\n", dat0);
-                printf("左侧传感器2:%f\r\n", dat1);
-                printf("右侧传感器1:%f\r\n", dat2);
-                printf("右侧传感器2:%f\r\n", dat3);
-                printf("中间传感器:%f\r\n", middleResult);
+                printf("左侧传感器1:%f  RAW:%hu \r\n", dat0,adc_value[0]);
+                printf("左侧传感器2:%f  RAW:%hu \r\n", dat1,adc_value[1]);
+                printf("右侧传感器1:%f  RAW:%hu \r\n", dat2,adc_value[2]);
+                printf("右侧传感器2:%f  RAW:%hu \r\n", dat3,adc_value[3]);
+                printf("中间传感器:%f  RAW:%hu \r\n", middleResult,adc_value[4]);
+
             } else {
                 //数据错误
                 printf("数据错误\r\n");
