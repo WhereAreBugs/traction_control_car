@@ -58,9 +58,9 @@ void speed_control(float speed)
     {
         speed = -speed;
     }
-    if (speed > 70)
+    if (speed > 90)
     {
-        speed = 70;
+        speed = 90;
     }
     speed = speed*20;
     __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, speed);
