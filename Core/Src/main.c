@@ -190,7 +190,7 @@ int main(void)
                                             (piddata.a * (dat0 + dat3) + N_fabs((piddata.c * (dat1 - dat2)))));
         }
         //输出PWM
-        servo_control(angle);
+
         speed_control(speed);
     /* USER CODE END WHILE */
 
@@ -264,6 +264,7 @@ float N_fabs(float d) {
     return d;
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    servo_control(angle);
     if (htim->Instance == TIM4) {
         //采用队列的方式保存中间传感器经过过滤后的值
         QueuePush(&middleValueQueue, middleResult);
