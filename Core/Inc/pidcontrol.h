@@ -4,22 +4,22 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP 20
-#define KI 12
-#define KD 1
+#define KP -6
+#define KI 0
+#define KD 5
 //PID的参数
-#define A 1
-#define B 1
-#define C 1
+#define A 12
+#define B 20
+#define C 14
 //差比和公式的参数
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0
-#define Fuzzy_KD 0.5
+#define Fuzzy_KD 0
 //模糊PID的参数
 //L1_adaptive
 #define L1_KP 1
 #define L1_KI 0
-#define L1_KD 0.5
+#define L1_KD 0
 //L1自适应PID的参数
 //PID结构体
 typedef struct {

@@ -23,6 +23,7 @@ void servo_control(float angle)
     }
     angle = 1850 + (angle-1) * (50/45.0f);
     __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3, angle);
+    __HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_4, angle);
 }
 void speed_control(float speed)
 /*
@@ -58,9 +59,9 @@ void speed_control(float speed)
     {
         speed = -speed;
     }
-    if (speed > 90)
+    if (speed > 100)
     {
-        speed = 90;
+        speed = 100;
     }
     speed = speed*20;
     __HAL_TIM_SetCompare(&htim2,TIM_CHANNEL_1, speed);
