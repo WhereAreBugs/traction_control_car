@@ -74,7 +74,7 @@ _Bool forkFlag = 0;
 short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
-
+uint16_t count = 0;
 //float middleValue[10] = {0};
 int Uart1_Rx_Cnt = 0;
 int middleValueCount = 0;
@@ -189,9 +189,10 @@ int main(void)
             //计算PID
             angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
                                             (piddata.a * (dat_L + dat_R) + N_fabs(( piddata.c * (dat_LM - dat_RM)))));
+
         }
         //输出PWM
-
+        servo_control(angle);
         speed_control(speed);
     /* USER CODE END WHILE */
 
@@ -265,7 +266,10 @@ float N_fabs(float d) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-    servo_control((float)(int)angle);
+    if (count<=20)
+        count++;
+    else
+        printf("angle:%f\r\n",angle);
     if (htim->Instance == TIM4) {
         //采用队列的方式保存中间传感器经过过滤后的值
         //TODO: 十字路口取值
