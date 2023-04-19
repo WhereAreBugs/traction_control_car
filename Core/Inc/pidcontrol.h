@@ -4,13 +4,13 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP -6
-#define KI 0
-#define KD 5
+#define KP -27.00000
+#define KI 0.0000010
+#define KD 12.000000
 //PID的参数
-#define A 12
-#define B 20
-#define C 14
+#define A 2.890000
+#define B 2.360000
+#define C 2.566000
 //差比和公式的参数
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0

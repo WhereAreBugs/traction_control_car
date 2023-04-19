@@ -69,8 +69,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 _Bool initFlag = 0;
 _Bool crossFlag = 0;
-_Bool roundaboutFlag = 0;
-_Bool forkFlag = 0;
+uint8_t forkFlag = 0;
 short stopFlag = 0;
 char rxBuffer;
 char RxBuffer[RXBUFFERSIZE];
@@ -82,7 +81,7 @@ int middleValueCount = 0;
 float middleResult = 0;
 PID piddata;
 float speed = 0;
-_Bool auto_mode = 0;
+_Bool auto_mode = 1;
 //过滤后的数据
 float dat_L = 0;
 float dat_LM = 0;
@@ -91,8 +90,19 @@ float dat_R = 0;
 float angle = 0;
 //过滤算法缓冲区
 RollingMeanFilter da0, da1, da2, da3, da4;
-
+_Bool isRound = 0;
+uint8_t roundCount = 0;
+uint8_t crossCount = 0;
+uint8_t tiggerCount = 0;
+_Bool roundFlag1 = 0;
+_Bool roundFlag2 = 0;
+_Bool roundFlag3 = 0;
+_Bool TimerRoundEN= 0;
+_Bool TimerCrossEN = 0;
+uint32_t TimerCount = 0;
+uint32_t TimerCorssCount = 0;
 float N_fabs(float d);
+
 /* USER CODE END 0 */
 
 /**
@@ -141,8 +151,8 @@ int main(void)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空比
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500);
-    __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 1800);
-    __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
+            __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 1800);
+            __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
     HAL_TIM_Base_Start_IT(&htim3); // 启动定时器3中断
@@ -160,7 +170,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    //TODO: 出库部分代码逻辑
+
 
 
     while (1) {
@@ -169,10 +179,54 @@ int main(void)
         //采用滚动均值滤波算法进行处理,并计算左右两侧的差值
         HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 25); // 启动ADC采样
         if (initFlag) {
-            servo_control(+50);
-            HAL_Delay(500);
+            //TODO: 出库部分代码逻辑
+            servo_control(20);
+            HAL_Delay(1500);
             servo_control(0);
-            initFlag = 0;
+        }
+        if (isRound) {
+//            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+            HAL_TIM_Base_Stop_IT(&htim3);
+
+            servo_control(20);
+            HAL_Delay(300);
+            isRound = 0;
+            HAL_TIM_Base_Start_IT(&htim3);
+        }
+        if (crossFlag) {
+//            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+            HAL_TIM_Base_Stop_IT(&htim3);
+            HAL_Delay(700);
+            crossFlag = 0;
+            for (int i = 0; i < 100; ++i) {
+                dat_L = RollingMeanFilter_calculate(&da0, adc_value[0]);
+                dat_LM = RollingMeanFilter_calculate(&da1, adc_value[1]);
+                dat_RM = RollingMeanFilter_calculate(&da2, adc_value[2]);
+                dat_R = RollingMeanFilter_calculate(&da3, adc_value[3]);
+                middleResult = RollingMeanFilter_calculate(&da4, adc_value[4]);
+
+                //计算PID
+                angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
+                                                (piddata.a * (dat_L + dat_R) +
+                                                 N_fabs((piddata.c * (dat_LM - dat_RM)))));
+                servo_control(angle);
+            }
+            HAL_TIM_Base_Start_IT(&htim3);
+        }
+        if (forkFlag == 1) {
+            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+            HAL_TIM_Base_Stop_IT(&htim3);
+            servo_control(+20);
+            HAL_Delay(500);
+            forkFlag++;//处于分叉1中
+            HAL_TIM_Base_Start_IT(&htim3);
+        } else if (forkFlag == 4) {
+            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+            HAL_TIM_Base_Stop_IT(&htim3);
+            servo_control(-20);
+            HAL_Delay(500);
+            forkFlag++;//处于分叉2中
+            HAL_TIM_Base_Start_IT(&htim3);
         }
         if (auto_mode) {
             if (adc_value[0] >= 4096 || adc_value[0] <= 0 || adc_value[1] >= 4096 || adc_value[1] <= 0 ||
@@ -188,26 +242,28 @@ int main(void)
 
             //计算PID
             angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
-                                            (piddata.a * (dat_L + dat_R) + N_fabs(( piddata.c * (dat_LM - dat_RM)))));
+                                            (piddata.a * (dat_L + dat_R) + N_fabs((piddata.c * (dat_LM - dat_RM)))));
 
         }
         //输出PWM
         servo_control(angle);
         speed_control(speed);
+//        HAL_Delay(10);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-        //Q: 位置式PID和增量式PID的区别？
-        //A: 位置式PID是根据当前位置和目标位置计算出需要的增量，然后再加上当前位置，得到目标位置
-        //   增量式PID是根据当前位置和目标位置计算出需要的增量，然后直接加上当前位置，得到目标位置
-        //   位置式PID的优点是可以减少积分误差，缺点是增量式PID的响应速度更快
-        //Q: 为什么要用PID？
-        //A: 因为PID可以使得电机的转速更加平滑，更加稳定
-        //Q: 针对SG90舵机，应该采用哪种PWM值？
-        //A: 500-2500，500是最小值，2500是最大值
-        //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
-        //A: 1/144HZ=6.94ms
-    }
+    //Q: 位置式PID和增量式PID的区别？
+    //A: 位置式PID是根据当前位置和目标位置计算出需要的增量，然后再加上当前位置，得到目标位置
+    //   增量式PID是根据当前位置和目标位置计算出需要的增量，然后直接加上当前位置，得到目标位置
+    //   位置式PID的优点是可以减少积分误差，缺点是增量式PID的响应速度更快
+    //Q: 为什么要用PID？
+    //A: 因为PID可以使得电机的转速更加平滑，更加稳定
+    //Q: 针对SG90舵机，应该采用哪种PWM值？
+    //A: 500-2500，500是最小值，2500是最大值
+    //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
+    //A: 1/144HZ=6.94ms
+
   /* USER CODE END 3 */
 }
 
@@ -266,55 +322,95 @@ float N_fabs(float d) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-    if (count<=20)
-        count++;
-    else
-        printf("angle:%f\r\n",angle);
-    if (htim->Instance == TIM4) {
+
+//        printf("angle:%f\r\n",angle);
+//        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
         //采用队列的方式保存中间传感器经过过滤后的值
         //TODO: 十字路口取值
-        if (0)
-            //处在十字路口
-        {
-            if (crossFlag == 0) {
-                crossFlag = 1;
-                //执行进入十字路口的处理
-                HAL_Delay(10);
-            } else {
-                crossFlag = 0;
-                //执行离开十字路口的处理
-                HAL_Delay(10);
-            }
-        }
+//        if (middleResult >= 2000 && dat_LM <= 250 && dat_L >= 2000)
+//            //处在十字路口
+//        {
+//
+//            if (crossFlag == 0) {
+//                printf("cross!!!\r\n");
+//                crossFlag = 1;
+//                //执行进入十字路口的处理
+////                HAL_Delay(10);
+//            } else {
+//                crossFlag = 0;
+//                //执行离开十字路口的处理
+////                HAL_Delay(10);
+//            }
+//        }
         //TODO: 环岛区域判断
-        if (0)
-            //处在环岛区域
-        {
-            if (roundaboutFlag == 0) {
-                roundaboutFlag = 1;
-                servo_control(+30.0f);
-            } else {
-                roundaboutFlag = 0;
-                //执行离开环岛区域的处理
+        if (TimerRoundEN) {
+            if (TimerCount<100) {
+                TimerCount++;
+            } else
+            {
+                roundFlag1 = 0;
+                roundFlag2 = 0;
+                roundFlag3 = 0;
+                TimerRoundEN = 0;
+                TimerCount = 0;
+                printf("Round: reset!\r\n");
             }
+         }
+    if (TimerCrossEN)
+    {
+        if (TimerCorssCount < 100) {
+            TimerCorssCount++;
+        } else
+        {
+            crossFlag = 0;
+            TimerCrossEN = 0;
+            TimerCorssCount = 0;
+            printf("Cross: reset!\r\n");
         }
+    }
+        if (!roundFlag1 && adc_value[4] >= 1000) {
+//            printf("flag1\r\n");
+            roundFlag1 = 1;
+            TimerRoundEN = 1;
+        }
+        if (roundFlag1 && adc_value[4] <= 300) {
+//            printf("flag2\r\n");
+            roundFlag2 = 1;
+        }
+        if (roundFlag2 && adc_value[4] >= 1000)
+        {
+//            printf("flag3\r\n");
+            printf("round!\r\n");
+            HAL_TIM_Base_Stop_IT(&htim2);
+            TimerRoundEN = 0;
+            TimerCount = 0;
+            roundFlag1 = 0;
+            roundFlag2 = 0;
+            roundFlag3 = 0;
+            isRound = 1;
+        }
+
         //进入分叉路口
         //这边的方差的值正确吗？
         //TODO: 分叉路口区域判断
-        if (0) {
+        if (!TimerCrossEN && dat_RM<1000&&dat_LM<1000&&dat_R>2000&&dat_L>2000) {
+            TimerRoundEN=1;
             if (forkFlag == 0) {
-                forkFlag = 1;
+                forkFlag++;
                 //执行进入分叉路口1的处理
-                servo_control(+30.0f);
-                HAL_Delay(10);
-            } else {
-                forkFlag = 0;
+            } else if (forkFlag == 2) {
+                forkFlag++;
+                //执行离开分叉路口1的处理
+            } else if (forkFlag == 3) {
+                forkFlag++;
                 //执行进入分叉路口2的处理
-                servo_control(-30.0f);
-                HAL_Delay(10);
+            } else if (forkFlag == 5) {
+                forkFlag = 0;
+                //执行离开分叉路口2的处理
             }
+            printf("fork!!! count:%d\r\n", forkFlag);
         }
-    }
+
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -439,11 +535,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("右侧传感器R:%f  \tRAW:%hu \r\n", dat_R, adc_value[3]);
                 printf("中间传感器M:%f  \tRAW:%hu \r\n", middleResult, adc_value[4]);
 
-            } else if (strstr(RxBuffer,"resetPID") != NULL)
-            {
-                PID_init(&piddata,piddata.kp,piddata.ki,piddata.kd,piddata.a,piddata.b,piddata.c,0.0f);
-            }
-            else {
+            } else if (strstr(RxBuffer, "resetPID") != NULL) {
+                PID_init(&piddata, piddata.kp, piddata.ki, piddata.kd, piddata.a, piddata.b, piddata.c, 0.0f);
+            } else {
                 //数据错误
                 printf("数据错误\r\n");
             }
