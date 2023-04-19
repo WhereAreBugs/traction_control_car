@@ -4,7 +4,7 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP -27.00000
+#define KP (-27.00000)
 #define KI 0.0000010
 #define KD 12.000000
 //PID的参数

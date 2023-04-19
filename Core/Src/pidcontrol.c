@@ -22,6 +22,12 @@ void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c,
 
 float PID_calculate(PID *pid, float input) {
     pid->error = pid->setpoint - input; //误差
+    //限幅
+    if (pid->error > 20) {
+        pid->error = 20;
+    } else if (pid->error < -20) {
+        pid->error = -20;
+    }
     pid->integral += pid->error; //积分
     pid->derivative = pid->error - pid->last_error; //微分
     pid->output = pid->kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
@@ -137,6 +143,12 @@ float L1_adaptive_PID_calculate(L1_adaptive_PID *pid, float input)
     }
 
     pid->error = pid->setpoint - input; //误差
+    //限幅
+    if (pid->error > 20) {
+        pid->error = 20;
+    } else if (pid->error < -20) {
+        pid->error = -20;
+    }
     pid->integral += pid->error; //积分
     pid->derivative = pid->error - pid->last_error; //微分
     pid->output = Kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
