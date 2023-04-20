@@ -4,19 +4,22 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP (-27.00000)
-#define KI 0.0000010
-#define KD 12.000000
+#define KP (-27.00000*0.34)
+#define KI (-0.013446)
+#define KD 1.000000
 //PID的参数
 #define A 2.890000
 #define B 2.360000
 #define C 2.566000
 //差比和公式的参数
+#define PID_I_LIMIT 100
+//PID抗饱和
+#define Startup_Speed 80
+//系统启动时候的速度
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0
 #define Fuzzy_KD 0
 //模糊PID的参数
-//L1_adaptive
 #define L1_KP 1
 #define L1_KI 0
 #define L1_KD 0

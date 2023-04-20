@@ -29,7 +29,14 @@ float PID_calculate(PID *pid, float input) {
         pid->error = -20;
     }
     pid->integral += pid->error; //积分
+    //积分抗饱和
+    if (pid->integral > PID_I_LIMIT) {
+        pid->integral = PID_I_LIMIT;
+    } else if (pid->integral < -PID_I_LIMIT) {
+        pid->integral = -PID_I_LIMIT;
+    }
     pid->derivative = pid->error - pid->last_error; //微分
+
     pid->output = pid->kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
     pid->last_error = pid->error; //更新误差
     return pid->output;
@@ -150,6 +157,8 @@ float L1_adaptive_PID_calculate(L1_adaptive_PID *pid, float input)
         pid->error = -20;
     }
     pid->integral += pid->error; //积分
+    //限幅
+
     pid->derivative = pid->error - pid->last_error; //微分
     pid->output = Kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
     pid->last_error = pid->error; //更新误差

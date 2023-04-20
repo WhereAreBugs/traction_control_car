@@ -80,7 +80,7 @@ int middleValueCount = 0;
 //Queue middleValueQueue;
 float middleResult = 0;
 PID piddata;
-float speed = 0;
+float speed = Startup_Speed;
 _Bool auto_mode = 1;
 //过滤后的数据
 float dat_L = 0;
@@ -97,10 +97,11 @@ uint8_t tiggerCount = 0;
 _Bool roundFlag1 = 0;
 _Bool roundFlag2 = 0;
 _Bool roundFlag3 = 0;
-_Bool TimerRoundEN= 0;
+_Bool TimerRoundEN = 0;
 _Bool TimerCrossEN = 0;
 uint32_t TimerCount = 0;
 uint32_t TimerCorssCount = 0;
+
 float N_fabs(float d);
 
 /* USER CODE END 0 */
@@ -109,43 +110,42 @@ float N_fabs(float d);
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
+int main(void) {
+    /* USER CODE BEGIN 1 */
 //Q: 请问adrc算法的数学原理是什么？
 
-  /* USER CODE END 1 */
+    /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE BEGIN Init */
+    /* USER CODE BEGIN Init */
     float df0[10] = {0}, df1[10] = {0}, df2[10] = {0}, df3[10] = {0}, df4[10] = {0};
     RollingMeanFilter_init(&da0, df0, 10);
     RollingMeanFilter_init(&da1, df1, 10);
     RollingMeanFilter_init(&da2, df2, 10);
     RollingMeanFilter_init(&da3, df3, 10);
     RollingMeanFilter_init(&da4, df4, 10);
-  /* USER CODE END Init */
+    /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+    /* Configure the system clock */
+    SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
     RetargetInit(&huart1);
 //    HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
-  /* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_USART1_UART_Init();
-  /* USER CODE BEGIN 2 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_DMA_Init();
+    MX_ADC1_Init();
+    MX_TIM2_Init();
+    MX_TIM3_Init();
+    MX_USART1_UART_Init();
+    /* USER CODE BEGIN 2 */
     HAL_ADCEx_Calibration_Start(&hadc1); // 启动ADC校准
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动PWM输出
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
@@ -163,13 +163,12 @@ int main(void)
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
 //    QueueInit(&middleValueQueue);
-    //WARNING: 以下代码将会禁用全局的速度
-    speed = 0;
 
-  /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
 
 
 
@@ -264,53 +263,49 @@ int main(void)
     //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
     //A: 1/144HZ=6.94ms
 
-  /* USER CODE END 3 */
+    /* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+void SystemClock_Config(void) {
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    /** Initializes the RCC Oscillators according to the specified parameters
+    * in the RCC_OscInitTypeDef structure.
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler();
+    }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                  | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+        Error_Handler();
+    }
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+        Error_Handler();
+    }
 }
 
 /* USER CODE BEGIN 4 */
@@ -325,8 +320,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 //        printf("angle:%f\r\n",angle);
 //        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
-        //采用队列的方式保存中间传感器经过过滤后的值
-        //TODO: 十字路口取值
+    //采用队列的方式保存中间传感器经过过滤后的值
+    //TODO: 十字路口取值
 //        if (middleResult >= 2000 && dat_LM <= 250 && dat_L >= 2000)
 //            //处在十字路口
 //        {
@@ -342,74 +337,80 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 ////                HAL_Delay(10);
 //            }
 //        }
-        //TODO: 环岛区域判断
-        if (TimerRoundEN) {
-            if (TimerCount<100) {
-                TimerCount++;
-            } else
-            {
-                roundFlag1 = 0;
-                roundFlag2 = 0;
-                roundFlag3 = 0;
-                TimerRoundEN = 0;
-                TimerCount = 0;
-                printf("Round: reset!\r\n");
-            }
-         }
-    if (TimerCrossEN)
-    {
+    //TODO: 环岛区域判断——未测试
+    if (TimerRoundEN) {
+        if (TimerCount < 100) {
+            TimerCount++;
+        } else {
+            roundFlag1 = 0;
+            roundFlag2 = 0;
+            roundFlag3 = 0;
+            TimerRoundEN = 0;
+            TimerCount = 0;
+            printf("Round: reset!\r\n");
+        }
+    }
+    if (TimerCrossEN) {
         if (TimerCorssCount < 100) {
             TimerCorssCount++;
-        } else
-        {
+        } else {
             crossFlag = 0;
             TimerCrossEN = 0;
             TimerCorssCount = 0;
             printf("Cross: reset!\r\n");
         }
     }
-        if (!roundFlag1 && adc_value[4] >= 1000) {
-//            printf("flag1\r\n");
-            roundFlag1 = 1;
-            TimerRoundEN = 1;
-        }
-        if (roundFlag1 && adc_value[4] <= 300) {
-//            printf("flag2\r\n");
-            roundFlag2 = 1;
-        }
-        if (roundFlag2 && adc_value[4] >= 1000)
-        {
-//            printf("flag3\r\n");
-            printf("round!\r\n");
-            HAL_TIM_Base_Stop_IT(&htim2);
-            TimerRoundEN = 0;
-            TimerCount = 0;
-            roundFlag1 = 0;
-            roundFlag2 = 0;
-            roundFlag3 = 0;
-            isRound = 1;
-        }
 
-        //进入分叉路口
-        //这边的方差的值正确吗？
-        //TODO: 分叉路口区域判断
-        if (!TimerCrossEN && dat_RM<1000&&dat_LM<1000&&dat_R>2000&&dat_L>2000) {
-            TimerRoundEN=1;
-            if (forkFlag == 0) {
-                forkFlag++;
-                //执行进入分叉路口1的处理
-            } else if (forkFlag == 2) {
-                forkFlag++;
-                //执行离开分叉路口1的处理
-            } else if (forkFlag == 3) {
-                forkFlag++;
-                //执行进入分叉路口2的处理
-            } else if (forkFlag == 5) {
-                forkFlag = 0;
-                //执行离开分叉路口2的处理
-            }
-            printf("fork!!! count:%d\r\n", forkFlag);
+    if (!roundFlag1 && adc_value[4] >= 1000) {
+//            printf("flag1\r\n");
+        roundFlag1 = 1;
+        TimerRoundEN = 1;
+    }
+    if (roundFlag1 && adc_value[4] <= 300) {
+//            printf("flag2\r\n");
+        roundFlag2 = 1;
+    }
+    if (roundFlag2 && adc_value[4] >= 1000) {
+//            printf("flag3\r\n");
+        printf("round!\r\n");
+        HAL_TIM_Base_Stop_IT(&htim2);
+        TimerRoundEN = 0;
+        TimerCount = 0;
+        roundFlag1 = 0;
+        roundFlag2 = 0;
+        roundFlag3 = 0;
+        isRound = 1;
+    }
+
+    //进入分叉路口
+    /**
+     * ForkFlag:
+     * 0--未进入分叉路口
+     * 1--第一次进入分叉路口
+     * 2--在第一次分叉路口中
+     * 3--第一次离开分叉路口
+     * 4--第二次进入分叉路口
+     * 5--在第二次分叉路口中
+     * 0--第二次离开分叉路口 !!!将会被reset到0
+    */
+    //TODO: 分叉路口区域判断——待修改阈值
+    if (!TimerCrossEN && dat_RM < 1000 && dat_LM < 1000 && dat_R > 2000 && dat_L > 2000) {
+        TimerRoundEN = 1;
+        if (forkFlag == 0) {
+            forkFlag++;
+            //执行进入分叉路口1的处理
+        } else if (forkFlag == 2) {
+            forkFlag++;
+            //执行离开分叉路口1的处理
+        } else if (forkFlag == 3) {
+            forkFlag++;
+            //执行进入分叉路口2的处理
+        } else if (forkFlag == 5) {
+            forkFlag = 0;
+            //执行离开分叉路口2的处理
         }
+        printf("fork!!! count:%d\r\n", forkFlag);
+    }
 
 }
 
@@ -556,15 +557,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
+void Error_Handler(void) {
+    /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1) {
 
     }
-  /* USER CODE END Error_Handler_Debug */
+    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
