@@ -4,17 +4,17 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP (-27.00000*0.34)
-#define KI (-0.013446)
-#define KD 1.000000
+#define KP (24.13)
+#define KI (0)
+#define KD (0)
 //PID的参数
-#define A 2.890000
-#define B 2.360000
-#define C 2.566000
+#define A 3.93
+#define B 1.11
+#define C 1.22
 //差比和公式的参数
-#define PID_I_LIMIT 100
+#define PID_I_LIMIT 80
 //PID抗饱和
-#define Startup_Speed 80
+#define Startup_Speed 0
 //系统启动时候的速度
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0
@@ -65,7 +65,7 @@ typedef struct {
     float fSum;
 } RollingMeanFilter;
 //滚动均值滤波算法初始化
-void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned char ucItemNum);
+void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned int ucItemNum);
 //滚动均值滤波算法计算
 float RollingMeanFilter_calculate(RollingMeanFilter *filter, float input);
 
@@ -91,6 +91,9 @@ typedef struct {
     float kp;
     float ki;
     float kd;
+    float a;
+    float b;
+    float c;
     float setpoint;
     float error;
     float last_error;
@@ -99,9 +102,9 @@ typedef struct {
     float output;
 } FuzzyPID;
 //模糊PID初始化
-void FuzzyPID_init(FuzzyPID *pid, float kp, float ki, float kd, float setpoint);
+void NPID_init(FuzzyPID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint);
 //模糊PID计算
-float FuzzyPID_calculate(FuzzyPID *pid, float input);
+float NPID_calculate(FuzzyPID *pid, float input, _Bool judge);
 //模糊PID调参
 //Q: 模糊PID与PID的区别
 //A: 模糊PID是PID的一种改进, 通过模糊控制, 使得PID的控制更加平滑, 更加稳定, 但是模糊PID的计算量更大, 速度更慢

@@ -80,6 +80,7 @@ int middleValueCount = 0;
 //Queue middleValueQueue;
 float middleResult = 0;
 PID piddata;
+//FuzzyPID piddata;
 float speed = Startup_Speed;
 _Bool auto_mode = 1;
 //过滤后的数据
@@ -89,7 +90,7 @@ float dat_RM = 0;
 float dat_R = 0;
 float angle = 0;
 //过滤算法缓冲区
-RollingMeanFilter da0, da1, da2, da3, da4;
+RollingMeanFilter da0, da1, da2, da3, da4,dac;
 _Bool isRound = 0;
 uint8_t roundCount = 0;
 uint8_t crossCount = 0;
@@ -101,7 +102,7 @@ _Bool TimerRoundEN = 0;
 _Bool TimerCrossEN = 0;
 uint32_t TimerCount = 0;
 uint32_t TimerCorssCount = 0;
-
+float offset = 0;
 float N_fabs(float d);
 
 /* USER CODE END 0 */
@@ -122,12 +123,14 @@ int main(void) {
     HAL_Init();
 
     /* USER CODE BEGIN Init */
-    float df0[10] = {0}, df1[10] = {0}, df2[10] = {0}, df3[10] = {0}, df4[10] = {0};
+    float df0[10] = {0}, df1[10] = {0}, df2[10] = {0}, df3[10] = {0}, df4[10] = {0},dat_c[200] = {0};
     RollingMeanFilter_init(&da0, df0, 10);
     RollingMeanFilter_init(&da1, df1, 10);
     RollingMeanFilter_init(&da2, df2, 10);
     RollingMeanFilter_init(&da3, df3, 10);
     RollingMeanFilter_init(&da4, df4, 10);
+    RollingMeanFilter_init(&dac,dat_c,200);
+
     /* USER CODE END Init */
 
     /* Configure the system clock */
@@ -160,6 +163,7 @@ int main(void) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);//使能电机
     //初始化PID
     PID_init(&piddata, KP, KI, KD, A, B, C, 0);
+//    NPID_init(&piddata, KP, KI, KD, A, B, C, 0);
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
 //    QueueInit(&middleValueQueue);
@@ -197,19 +201,7 @@ int main(void) {
             HAL_TIM_Base_Stop_IT(&htim3);
             HAL_Delay(700);
             crossFlag = 0;
-            for (int i = 0; i < 100; ++i) {
-                dat_L = RollingMeanFilter_calculate(&da0, adc_value[0]);
-                dat_LM = RollingMeanFilter_calculate(&da1, adc_value[1]);
-                dat_RM = RollingMeanFilter_calculate(&da2, adc_value[2]);
-                dat_R = RollingMeanFilter_calculate(&da3, adc_value[3]);
-                middleResult = RollingMeanFilter_calculate(&da4, adc_value[4]);
-
-                //计算PID
-                angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
-                                                (piddata.a * (dat_L + dat_R) +
-                                                 N_fabs((piddata.c * (dat_LM - dat_RM)))));
-                servo_control(angle);
-            }
+            servo_control(angle);
             HAL_TIM_Base_Start_IT(&htim3);
         }
         if (forkFlag == 1) {
@@ -238,16 +230,18 @@ int main(void) {
             dat_RM = RollingMeanFilter_calculate(&da2, adc_value[2]);
             dat_R = RollingMeanFilter_calculate(&da3, adc_value[3]);
             middleResult = RollingMeanFilter_calculate(&da4, adc_value[4]);
+            offset = (piddata.a * (dat_LM - dat_RM) + piddata.b * (dat_L - dat_R)) /
+                     (piddata.a * (dat_LM + dat_RM) + N_fabs((piddata.c * (dat_L - dat_R))));
 
             //计算PID
-            angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
-                                            (piddata.a * (dat_L + dat_R) + N_fabs((piddata.c * (dat_LM - dat_RM)))));
+//            angle = PID_calculate(&piddata, (piddata.a * (dat_L - dat_R) + piddata.b * (dat_LM - dat_RM)) /
+//                                            (piddata.a * (dat_L + dat_R) + N_fabs((piddata.c * (dat_LM - dat_RM)))));
 
+                angle = PID_calculate(&piddata, -offset);
         }
         //输出PWM
         servo_control(angle);
         speed_control(speed);
-//        HAL_Delay(10);
     }
     /* USER CODE END WHILE */
 
@@ -319,7 +313,7 @@ float N_fabs(float d) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 //        printf("angle:%f\r\n",angle);
-//        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
+
     //采用队列的方式保存中间传感器经过过滤后的值
     //TODO: 十字路口取值
 //        if (middleResult >= 2000 && dat_LM <= 250 && dat_L >= 2000)
@@ -337,6 +331,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 ////                HAL_Delay(10);
 //            }
 //        }
+//    if (count<20)
+//    {
+//        count++;
+//    }
+//    else
+//        printf("t: %f,%f,%f\n",angle,offset,0.0f);
+//        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
     //TODO: 环岛区域判断——未测试
     if (TimerRoundEN) {
         if (TimerCount < 100) {
@@ -359,6 +360,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             TimerCorssCount = 0;
             printf("Cross: reset!\r\n");
         }
+    }
+    if (1||N_fabs(angle)>5)
+    {
+        return;
     }
 
     if (!roundFlag1 && adc_value[4] >= 1000) {
@@ -419,6 +424,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
         stopFlag++;
         if (stopFlag >= 2) {
             // 停车
+            printf("stop!!!\r\n");
             servo_control(30.0f);
             HAL_Delay(10);
             servo_control(-20.0f);
@@ -523,6 +529,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("setKI:设置积分系数\r\n");
                 printf("setKD:设置微分系数\r\n");
                 printf("what:返回当前参数\r\n");
+
                 printf("SetAutoMode:设置自动模式\r\n");
                 printf("SetAngle:设置角度\r\n");
                 printf("data:返回当前传感器数据\r\n");
@@ -537,8 +544,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("中间传感器M:%f  \tRAW:%hu \r\n", middleResult, adc_value[4]);
 
             } else if (strstr(RxBuffer, "resetPID") != NULL) {
-                PID_init(&piddata, piddata.kp, piddata.ki, piddata.kd, piddata.a, piddata.b, piddata.c, 0.0f);
-            } else {
+                NPID_init(&piddata, piddata.kp, piddata.ki, piddata.kd, piddata.a, piddata.b, piddata.c, 0.0f);
+            }
+            else if (strstr(RxBuffer, "whatf") != NULL) {
+                printf("i:%f,%f,%f,%f,%f",dat_L,dat_LM,dat_RM,dat_R,middleResult);
+            }
+            else {
                 //数据错误
                 printf("数据错误\r\n");
             }

@@ -2,6 +2,7 @@
 // Created by 神奇bug在哪里 on 3/20/23.
 //
 
+#include <math.h>
 #include "pidcontrol.h"
 
 void PID_init(PID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint) {
@@ -31,9 +32,9 @@ float PID_calculate(PID *pid, float input) {
     pid->integral += pid->error; //积分
     //积分抗饱和
     if (pid->integral > PID_I_LIMIT) {
-        pid->integral = PID_I_LIMIT;
+        pid->integral = 0;
     } else if (pid->integral < -PID_I_LIMIT) {
-        pid->integral = -PID_I_LIMIT;
+        pid->integral = -0;
     }
     pid->derivative = pid->error - pid->last_error; //微分
 
@@ -43,7 +44,7 @@ float PID_calculate(PID *pid, float input) {
 }
 
 
-void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned char ucItemNum)
+void RollingMeanFilter_init(RollingMeanFilter *filter, float *pBuf, unsigned int ucItemNum)
 {
     filter->pBuf = pBuf;
     filter->ucItemNum = ucItemNum;
@@ -90,12 +91,15 @@ float KalmanFilter(float inData) {
     return x_now; //返回最优值
 
 }
-//模糊控制
-void FuzzyPID_init(FuzzyPID *pid, float kp, float ki, float kd, float setpoint)
+
+void NPID_init(FuzzyPID *pid, float kp, float ki, float kd, float a, float b, float c, float setpoint)
 {
     pid->kp = kp; //默认Kp
     pid->ki = ki;
     pid->kd = kd;
+    pid->a = a;
+    pid ->b = b;
+    pid ->c = c;
     pid->setpoint = setpoint;
     pid->error = 0;
     pid->last_error = 0;
@@ -103,23 +107,31 @@ void FuzzyPID_init(FuzzyPID *pid, float kp, float ki, float kd, float setpoint)
     pid->derivative = 0;
     pid->output = 0;
 }
-float FuzzyPID_calculate(FuzzyPID *pid, float input)
+float NPID_calculate(FuzzyPID *pid, float input, _Bool judge)
 {
-    //计算模糊的Kp
-    float Kp;
-    if (pid->error > 0)
-    {
-        Kp = pid->kp * (1 - pid->error / pid->setpoint);
-    }
-    else
-    {
-        Kp = pid->kp * (1 + pid->error / pid->setpoint);
-    }
+    float kp = pid->kp;
+//    //计算模糊的Kp
+//    if(!judge)
+//    {
+//        kp = -9;
+//    } else{
+//        kp = pid->kp;
+//    }
 
     pid->error = pid->setpoint - input; //误差
+    if (pid->error > 20) {
+        pid->error = 20;
+    } else if (pid->error < -20) {
+        pid->error = -20;
+    }
     pid->integral += pid->error; //积分
+    if (pid->integral > PID_I_LIMIT) {
+        pid->integral = PID_I_LIMIT;
+    } else if (pid->integral < -PID_I_LIMIT) {
+        pid->integral = -PID_I_LIMIT;
+    }
     pid->derivative = pid->error - pid->last_error; //微分
-    pid->output = Kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
+    pid->output = kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
     pid->last_error = pid->error; //更新误差
     return pid->output;
 }
