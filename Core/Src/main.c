@@ -138,7 +138,7 @@ int main(void) {
 
     /* USER CODE BEGIN SysInit */
     RetargetInit(&huart1);
-//    HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
+
     /* USER CODE END SysInit */
 
     /* Initialize all configured peripherals */
@@ -154,8 +154,8 @@ int main(void) {
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空比
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500);
-            __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 1800);
-            __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
+    __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 1800);
+    __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
     HAL_TIM_Base_Start_IT(&htim3); // 启动定时器3中断
@@ -163,7 +163,6 @@ int main(void) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);//使能电机
     //初始化PID
     PID_init(&piddata, KP, KI, KD, A, B, C, 0);
-//    NPID_init(&piddata, KP, KI, KD, A, B, C, 0);
     // 位置式PID
     // 数据1，2是左侧，3，4是右侧
 //    QueueInit(&middleValueQueue);
@@ -313,7 +312,7 @@ float N_fabs(float d) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 //        printf("angle:%f\r\n",angle);
-
+    UNUSED(htim);
     //采用队列的方式保存中间传感器经过过滤后的值
     //TODO: 十字路口取值
 //        if (middleResult >= 2000 && dat_LM <= 250 && dat_L >= 2000)
@@ -331,16 +330,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 ////                HAL_Delay(10);
 //            }
 //        }
-//    if (count<20)
-//    {
+//    if (count < 20) {
 //        count++;
-//    }
-//    else
-//        printf("t: %f,%f,%f\n",angle,offset,0.0f);
+//    } else
+////        printf("t: %f,%f,%f\n",angle,offset,0.0f);
 //        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
     //TODO: 环岛区域判断——未测试
     if (TimerRoundEN) {
-        if (TimerCount < 100) {
+        if (TimerCount < 200) {
             TimerCount++;
         } else {
             roundFlag1 = 0;
@@ -352,79 +349,77 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         }
     }
     if (TimerCrossEN) {
-        if (TimerCorssCount < 100) {
+        if (TimerCorssCount < 200) {
             TimerCorssCount++;
         } else {
-            crossFlag = 0;
             TimerCrossEN = 0;
             TimerCorssCount = 0;
-            printf("Cross: reset!\r\n");
         }
     }
-    if (1||N_fabs(angle)>5)
-    {
-        return;
-    }
-
-    if (!roundFlag1 && adc_value[4] >= 1000) {
-//            printf("flag1\r\n");
-        roundFlag1 = 1;
-        TimerRoundEN = 1;
-    }
-    if (roundFlag1 && adc_value[4] <= 300) {
-//            printf("flag2\r\n");
-        roundFlag2 = 1;
-    }
-    if (roundFlag2 && adc_value[4] >= 1000) {
-//            printf("flag3\r\n");
-        printf("round!\r\n");
-        HAL_TIM_Base_Stop_IT(&htim2);
-        TimerRoundEN = 0;
-        TimerCount = 0;
-        roundFlag1 = 0;
-        roundFlag2 = 0;
-        roundFlag3 = 0;
-        isRound = 1;
-    }
-
-    //进入分叉路口
-    /**
-     * ForkFlag:
-     * 0--未进入分叉路口
-     * 1--第一次进入分叉路口
-     * 2--在第一次分叉路口中
-     * 3--第一次离开分叉路口
-     * 4--第二次进入分叉路口
-     * 5--在第二次分叉路口中
-     * 0--第二次离开分叉路口 !!!将会被reset到0
-    */
-    //TODO: 分叉路口区域判断——待修改阈值
-    if (!TimerCrossEN && dat_RM < 1000 && dat_LM < 1000 && dat_R > 2000 && dat_L > 2000) {
-        TimerRoundEN = 1;
-        if (forkFlag == 0) {
-            forkFlag++;
-            //执行进入分叉路口1的处理
-        } else if (forkFlag == 2) {
-            forkFlag++;
-            //执行离开分叉路口1的处理
-        } else if (forkFlag == 3) {
-            forkFlag++;
-            //执行进入分叉路口2的处理
-        } else if (forkFlag == 5) {
-            forkFlag = 0;
-            //执行离开分叉路口2的处理
+        if (N_fabs(angle) > 5) {
+            return;
         }
-        printf("fork!!! count:%d\r\n", forkFlag);
-    }
+
+        if (!roundFlag1 && adc_value[4] >= 1000) {
+            printf("flag1\r\n");
+            roundFlag1 = 1;
+            TimerRoundEN = 1;
+        }
+        if (roundFlag1 && adc_value[4] <= 300) {
+            printf("flag2\r\n");
+            roundFlag2 = 1;
+        }
+        if (roundFlag2 && adc_value[4] >= 1000) {
+            printf("flag3\r\n");
+            printf("round!\r\n");
+            HAL_TIM_Base_Stop_IT(&htim2);
+            TimerRoundEN = 0;
+            TimerCount = 0;
+            roundFlag1 = 0;
+            roundFlag2 = 0;
+            roundFlag3 = 0;
+            isRound = 1;
+        }
+
+        //进入分叉路口
+        /**
+         * ForkFlag:
+         * 0--未进入分叉路口
+         * 1--第一次进入分叉路口
+         * 2--在第一次分叉路口中
+         * 3--第一次离开分叉路口
+         * 4--第二次进入分叉路口
+         * 5--在第二次分叉路口中
+         * 0--第二次离开分叉路口 !!!将会被reset到0
+        */
+        //TODO: 分叉路口区域判断——待修改阈值
+        if (!TimerCrossEN && dat_LM <= 200 && dat_RM <= 100 && middleResult < 200 && dat_R > 2200 && dat_L > 1600) {
+            TimerRoundEN = 1;
+            if (forkFlag == 0) {
+                forkFlag++;
+                //执行进入分叉路口1的处理
+            } else if (forkFlag == 2) {
+                forkFlag++;
+                //执行离开分叉路口1的处理
+            } else if (forkFlag == 3) {
+                forkFlag++;
+                //执行进入分叉路口2的处理
+            } else if (forkFlag == 5) {
+                forkFlag = 0;
+                //执行离开分叉路口2的处理
+            }
+            printf("fork!!! count:%d\r\n", forkFlag);
+        }
+
 
 }
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     if (GPIO_Pin == BEED_Pin) {
         stopFlag++;
         if (stopFlag >= 2) {
             // 停车
             printf("stop!!!\r\n");
+            speed = 20;
             servo_control(30.0f);
             HAL_Delay(10);
             servo_control(-20.0f);
@@ -544,7 +539,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("中间传感器M:%f  \tRAW:%hu \r\n", middleResult, adc_value[4]);
 
             } else if (strstr(RxBuffer, "resetPID") != NULL) {
-                NPID_init(&piddata, piddata.kp, piddata.ki, piddata.kd, piddata.a, piddata.b, piddata.c, 0.0f);
+                PID_init(&piddata, piddata.kp, piddata.ki, piddata.kd, piddata.a, piddata.b, piddata.c, 0.0f);
             }
             else if (strstr(RxBuffer, "whatf") != NULL) {
                 printf("i:%f,%f,%f,%f,%f",dat_L,dat_LM,dat_RM,dat_R,middleResult);

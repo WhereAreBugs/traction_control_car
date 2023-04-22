@@ -37,7 +37,6 @@ float PID_calculate(PID *pid, float input) {
         pid->integral = -0;
     }
     pid->derivative = pid->error - pid->last_error; //微分
-
     pid->output = pid->kp * pid->error + pid->ki * pid->integral + pid->kd * pid->derivative; //输出
     pid->last_error = pid->error; //更新误差
     return pid->output;
