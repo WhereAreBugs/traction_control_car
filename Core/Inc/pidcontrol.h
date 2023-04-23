@@ -14,7 +14,7 @@
 //差比和公式的参数
 #define PID_I_LIMIT 80
 //PID抗饱和
-#define Startup_Speed 100
+#define Startup_Speed 0
 //系统启动时候的速度
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0

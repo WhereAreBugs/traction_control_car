@@ -191,7 +191,7 @@ int main(void) {
             HAL_TIM_Base_Stop_IT(&htim3);
 
             servo_control(20);
-            HAL_Delay(300);
+            HAL_Delay(500);
             isRound = 0;
             HAL_TIM_Base_Start_IT(&htim3);
         }
@@ -333,9 +333,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //    if (count < 20) {
 //        count++;
 //    } else
+//        count = 0;
 ////        printf("t: %f,%f,%f\n",angle,offset,0.0f);
 //        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
-    //TODO: 环岛区域判断——未测试
+   // TODO: 环岛区域判断——未测试
     if (TimerRoundEN) {
         if (TimerCount < 200) {
             TimerCount++;
@@ -349,7 +350,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         }
     }
     if (TimerCrossEN) {
-        if (TimerCorssCount < 200) {
+        if (TimerCorssCount < 150) {
             TimerCorssCount++;
         } else {
             TimerCrossEN = 0;
@@ -360,16 +361,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             return;
         }
 
-        if (!roundFlag1 && adc_value[4] >= 1000) {
+        if (!roundFlag1 && adc_value[4] >= 1300) {
             printf("flag1\r\n");
             roundFlag1 = 1;
             TimerRoundEN = 1;
         }
-        if (roundFlag1 && adc_value[4] <= 300) {
+        if (roundFlag1 && adc_value[4] <= 500) {
             printf("flag2\r\n");
             roundFlag2 = 1;
         }
-        if (roundFlag2 && adc_value[4] >= 1000) {
+        if (roundFlag2 && adc_value[0] >= 2500) {
             printf("flag3\r\n");
             printf("round!\r\n");
             HAL_TIM_Base_Stop_IT(&htim2);
@@ -393,7 +394,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
          * 0--第二次离开分叉路口 !!!将会被reset到0
         */
         //TODO: 分叉路口区域判断——待修改阈值
-        if (!TimerCrossEN && dat_LM <= 200 && dat_RM <= 100 && middleResult < 200 && dat_R > 2200 && dat_L > 1600) {
+        if (!TimerCrossEN && middleResult < 500 && dat_R > 2000 && dat_L > 2000) {
             TimerRoundEN = 1;
             if (forkFlag == 0) {
                 forkFlag++;
