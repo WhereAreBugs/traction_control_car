@@ -67,7 +67,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-_Bool initFlag = 0;
+_Bool initFlag = 1;
 _Bool crossFlag = 0;
 uint8_t forkFlag = 0;
 short stopFlag = 0;
@@ -100,6 +100,7 @@ _Bool roundFlag2 = 0;
 _Bool roundFlag3 = 0;
 _Bool TimerRoundEN = 0;
 _Bool TimerCrossEN = 0;
+_Bool isEnd = 0;
 uint32_t TimerCount = 0;
 uint32_t TimerCorssCount = 0;
 float offset = 0;
@@ -111,18 +112,19 @@ float N_fabs(float d);
   * @brief  The application entry point.
   * @retval int
   */
-int main(void) {
-    /* USER CODE BEGIN 1 */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
 //Q: 请问adrc算法的数学原理是什么？
 
-    /* USER CODE END 1 */
+  /* USER CODE END 1 */
 
-    /* MCU Configuration--------------------------------------------------------*/
+  /* MCU Configuration--------------------------------------------------------*/
 
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-    /* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
     float df0[10] = {0}, df1[10] = {0}, df2[10] = {0}, df3[10] = {0}, df4[10] = {0},dat_c[200] = {0};
     RollingMeanFilter_init(&da0, df0, 10);
     RollingMeanFilter_init(&da1, df1, 10);
@@ -131,24 +133,24 @@ int main(void) {
     RollingMeanFilter_init(&da4, df4, 10);
     RollingMeanFilter_init(&dac,dat_c,200);
 
-    /* USER CODE END Init */
+  /* USER CODE END Init */
 
-    /* Configure the system clock */
-    SystemClock_Config();
+  /* Configure the system clock */
+  SystemClock_Config();
 
-    /* USER CODE BEGIN SysInit */
+  /* USER CODE BEGIN SysInit */
     RetargetInit(&huart1);
 
-    /* USER CODE END SysInit */
+  /* USER CODE END SysInit */
 
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-    MX_DMA_Init();
-    MX_ADC1_Init();
-    MX_TIM2_Init();
-    MX_TIM3_Init();
-    MX_USART1_UART_Init();
-    /* USER CODE BEGIN 2 */
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_ADC1_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_USART1_UART_Init();
+  /* USER CODE BEGIN 2 */
     HAL_ADCEx_Calibration_Start(&hadc1); // 启动ADC校准
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动PWM输出
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
@@ -158,6 +160,7 @@ int main(void) {
     __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
+    HAL_GPIO_EXTI_Callback(BEED_Pin);
     HAL_TIM_Base_Start_IT(&htim3); // 启动定时器3中断
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);//使能电机
@@ -168,10 +171,10 @@ int main(void) {
 //    QueueInit(&middleValueQueue);
 
 
-    /* USER CODE END 2 */
+  /* USER CODE END 2 */
 
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 
 
 
@@ -182,14 +185,28 @@ int main(void) {
         HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 25); // 启动ADC采样
         if (initFlag) {
             //TODO: 出库部分代码逻辑
+            speed_control(100);
+            servo_control(0);
+            HAL_Delay(500);
+            servo_control(20);
+            HAL_Delay(1200);
+            servo_control(0);
+            speed_control(0);
+            speed = 0;
+            initFlag = 0;
+        }
+        if (isEnd)
+        {
+            speed_control(60);
             servo_control(20);
             HAL_Delay(1500);
             servo_control(0);
+            return 0;
         }
         if (isRound) {
 //            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
             HAL_TIM_Base_Stop_IT(&htim3);
-
+//            HAL_Delay(20);
             servo_control(20);
             HAL_Delay(500);
             isRound = 0;
@@ -256,49 +273,53 @@ int main(void) {
     //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
     //A: 1/144HZ=6.94ms
 
-    /* USER CODE END 3 */
+  /* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void) {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-    /** Initializes the RCC Oscillators according to the specified parameters
-    * in the RCC_OscInitTypeDef structure.
-    */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        Error_Handler();
-    }
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-    /** Initializes the CPU, AHB and APB buses clocks
-    */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-                                  | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-        Error_Handler();
-    }
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
-        Error_Handler();
-    }
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -330,12 +351,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 ////                HAL_Delay(10);
 //            }
 //        }
-//    if (count < 20) {
+//    if (count < 5) {
 //        count++;
 //    } else
-//        count = 0;
-////        printf("t: %f,%f,%f\n",angle,offset,0.0f);
+////
+//    {
 //        printf("data:%f,%f,%f,%f,%f\r\n", dat_L, dat_LM, dat_RM, dat_R, middleResult);
+////        printf("data: %f,%f,%f \r\n", dat_LM, dat_RM, (float) ((dat_L-dat_R)/(dat_LM - dat_RM)));
+//        count = 0;
+//    }
+
    // TODO: 环岛区域判断——未测试
     if (TimerRoundEN) {
         if (TimerCount < 200) {
@@ -361,7 +386,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             return;
         }
 
-        if (!roundFlag1 && adc_value[4] >= 1300) {
+        if (!roundFlag1 && adc_value[4] >= 1300 && fabsf(dat_LM-dat_RM) > 1000) {
             printf("flag1\r\n");
             roundFlag1 = 1;
             TimerRoundEN = 1;
@@ -369,11 +394,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         if (roundFlag1 && adc_value[4] <= 500) {
             printf("flag2\r\n");
             roundFlag2 = 1;
-        }
-        if (roundFlag2 && adc_value[0] >= 2500) {
-            printf("flag3\r\n");
             printf("round!\r\n");
-            HAL_TIM_Base_Stop_IT(&htim2);
             TimerRoundEN = 0;
             TimerCount = 0;
             roundFlag1 = 0;
@@ -382,6 +403,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             isRound = 1;
         }
 
+//        if (roundFlag2 && adc_value[0] >= 2000) {
+//            //环岛区域
+//            printf("flag3\r\n");
+//            printf("round!\r\n");
+//            TimerRoundEN = 0;
+//            TimerCount = 0;
+//            roundFlag1 = 0;
+//            roundFlag2 = 0;
+//            roundFlag3 = 0;
+//            isRound = 1;
+//        }
         //进入分叉路口
         /**
          * ForkFlag:
@@ -394,13 +426,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
          * 0--第二次离开分叉路口 !!!将会被reset到0
         */
         //TODO: 分叉路口区域判断——待修改阈值
-        if (!TimerCrossEN && middleResult < 500 && dat_R > 2000 && dat_L > 2000) {
-            TimerRoundEN = 1;
+        if (!isRound && !TimerCrossEN && middleResult < 500 && dat_R > 2000 && dat_L > 2000 && (dat_RM < 300 || dat_LM <300)) {
+//    if (!isRound && !TimerCrossEN && fabsf(dat_LM-dat_RM)< 200 && dat_RM<300 && dat_LM <300 && dat_R > 2000 && dat_L > 2000){
+            TimerCrossEN = 1;
             if (forkFlag == 0) {
                 forkFlag++;
                 //执行进入分叉路口1的处理
             } else if (forkFlag == 2) {
-                forkFlag++;
+                forkFlag+=2;
                 //执行离开分叉路口1的处理
             } else if (forkFlag == 3) {
                 forkFlag++;
@@ -415,20 +448,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == BEED_Pin) {
+        printf("stop: %hd\r\n", stopFlag);
         stopFlag++;
         if (stopFlag >= 2) {
-            // 停车
+            // TODO: 入库
             printf("stop!!!\r\n");
-            speed = 20;
-            servo_control(30.0f);
-            HAL_Delay(10);
-            servo_control(-20.0f);
-            HAL_Delay(10);
-            servo_control(0.0f);
-            speed = 0;
+            isEnd = 1;
         }
-    }
+
 
 }
 
@@ -564,14 +591,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void) {
-    /* USER CODE BEGIN Error_Handler_Debug */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1) {
 
     }
-    /* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
