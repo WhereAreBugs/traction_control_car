@@ -81,9 +81,6 @@ void Error_Handler(void);
 #define BIN_2_GPIO_Port GPIOA
 #define SERVO_Pin GPIO_PIN_0
 #define SERVO_GPIO_Port GPIOB
-#define BEED_Pin GPIO_PIN_3
-#define BEED_GPIO_Port GPIOB
-#define BEED_EXTI_IRQn EXTI3_IRQn
 
 /* USER CODE BEGIN Private defines */
 

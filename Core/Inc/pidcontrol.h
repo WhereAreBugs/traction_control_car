@@ -4,7 +4,7 @@
 
 #ifndef SMART_PIDCONTROL_H
 #define SMART_PIDCONTROL_H
-#define KP (20.13)
+#define KP (20.8)
 #define KI (0)
 #define KD (0)
 //PID的参数
@@ -14,7 +14,9 @@
 //差比和公式的参数
 #define PID_I_LIMIT 80
 //PID抗饱和
-#define Startup_Speed 0
+#define Startup_Speed 100
+
+
 //系统启动时候的速度
 #define Fuzzy_KP 1
 #define Fuzzy_KI 0

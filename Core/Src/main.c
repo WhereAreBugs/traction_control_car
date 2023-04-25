@@ -30,7 +30,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
-#include "relocated.h" //重定向printf到串口
+#include "relocated.h" //重定向printf到串�????
 #include "servo.h"
 #include "queue.h"
 #include "stringProcess.h"
@@ -56,7 +56,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t adc_value[25] = {0}; // 保存ADC采样值
+uint16_t adc_value[25] = {0}; // 保存ADC采样�????
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,7 +89,7 @@ float dat_LM = 0;
 float dat_RM = 0;
 float dat_R = 0;
 float angle = 0;
-//过滤算法缓冲区
+//过滤算法缓冲�????
 RollingMeanFilter da0, da1, da2, da3, da4,dac;
 _Bool isRound = 0;
 uint8_t roundCount = 0;
@@ -97,7 +97,7 @@ uint8_t crossCount = 0;
 uint8_t tiggerCount = 0;
 _Bool roundFlag1 = 0;
 _Bool roundFlag2 = 0;
-_Bool roundFlag3 = 0;
+_Bool isRightRound = 0;
 _Bool TimerRoundEN = 0;
 _Bool TimerCrossEN = 0;
 _Bool isEnd = 0;
@@ -115,7 +115,7 @@ float N_fabs(float d);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-//Q: 请问adrc算法的数学原理是什么？
+//Q: 请问adrc算法的数学原理是�????么？
 
   /* USER CODE END 1 */
 
@@ -154,20 +154,20 @@ int main(void)
     HAL_ADCEx_Calibration_Start(&hadc1); // 启动ADC校准
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动PWM输出
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空比
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500); // 设置PWM占空�????
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 500);
     __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_3, 1800);
     __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 1800);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
-    HAL_GPIO_EXTI_Callback(BEED_Pin);
-    HAL_TIM_Base_Start_IT(&htim3); // 启动定时器3中断
+//    HAL_GPIO_EXTI_Callback(BEED_PIN_Pin);
+    HAL_TIM_Base_Start_IT(&htim3); // 启动定时�????3中断
     HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);//使能电机
     //初始化PID
     PID_init(&piddata, KP, KI, KD, A, B, C, 0);
     // 位置式PID
-    // 数据1，2是左侧，3，4是右侧
+    // 数据1�????2是左侧，3�????4是右�????
 //    QueueInit(&middleValueQueue);
 
 
@@ -181,7 +181,7 @@ int main(void)
     while (1) {
         //处理采集回来的adc数据
         //其中adc_value[0]和adc_value[1]是左侧的数据，adc_value[2]和adc_value[3]是右侧的数据
-        //采用滚动均值滤波算法进行处理,并计算左右两侧的差值
+        //采用滚动均�?�滤波算法进行处�????,并计算左右两侧的差�??
         HAL_ADC_Start_DMA(&hadc1, (uint32_t *) adc_value, 25); // 启动ADC采样
         if (initFlag) {
             //TODO: 出库部分代码逻辑
@@ -190,26 +190,37 @@ int main(void)
             HAL_Delay(500);
             servo_control(20);
             HAL_Delay(1200);
-            servo_control(0);
+            //servo_control(0);
+//            speed = 100;
             speed_control(0);
-            speed = 0;
+
             initFlag = 0;
         }
         if (isEnd)
         {
             speed_control(60);
-            servo_control(20);
+            HAL_Delay(200);
+            speed_control(-60);
+            servo_control(-20);
             HAL_Delay(1500);
             servo_control(0);
+            speed_control(0);
             return 0;
         }
         if (isRound) {
 //            __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
             HAL_TIM_Base_Stop_IT(&htim3);
 //            HAL_Delay(20);
-            servo_control(20);
+            if (!isRightRound)
+            {
+                servo_control(20);
+            } else{
+                servo_control(-20);
+            }
+
             HAL_Delay(500);
             isRound = 0;
+            isRightRound = 0;
             HAL_TIM_Base_Start_IT(&htim3);
         }
         if (crossFlag) {
@@ -224,15 +235,15 @@ int main(void)
             __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
             HAL_TIM_Base_Stop_IT(&htim3);
             servo_control(+20);
-            HAL_Delay(500);
-            forkFlag++;//处于分叉1中
+            HAL_Delay(350);
+            forkFlag++;//处于分叉1�????
             HAL_TIM_Base_Start_IT(&htim3);
         } else if (forkFlag == 4) {
             __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
             HAL_TIM_Base_Stop_IT(&htim3);
             servo_control(-20);
-            HAL_Delay(500);
-            forkFlag++;//处于分叉2中
+            HAL_Delay(350);
+            forkFlag++;//处于分叉2�????
             HAL_TIM_Base_Start_IT(&htim3);
         }
         if (auto_mode) {
@@ -263,14 +274,14 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     //Q: 位置式PID和增量式PID的区别？
-    //A: 位置式PID是根据当前位置和目标位置计算出需要的增量，然后再加上当前位置，得到目标位置
+    //A: 位置式PID是根据当前位置和目标位置计算出需要的增量，然后再加上当前位置，得到目标位�????
     //   增量式PID是根据当前位置和目标位置计算出需要的增量，然后直接加上当前位置，得到目标位置
-    //   位置式PID的优点是可以减少积分误差，缺点是增量式PID的响应速度更快
-    //Q: 为什么要用PID？
+    //   位置式PID的优点是可以减少积分误差，缺点是增量式PID的响应�?�度更快
+    //Q: 为什么要用PID�????
     //A: 因为PID可以使得电机的转速更加平滑，更加稳定
     //Q: 针对SG90舵机，应该采用哪种PWM值？
-    //A: 500-2500，500是最小值，2500是最大值
-    //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少？
+    //A: 500-2500�????500是最小�?�，2500是最大�??
+    //Q: 在psc=72,arr=500,主频=72MHZ的情况下，PWM的周期是多少�????
     //A: 1/144HZ=6.94ms
 
   /* USER CODE END 3 */
@@ -334,8 +345,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 //        printf("angle:%f\r\n",angle);
     UNUSED(htim);
-    //采用队列的方式保存中间传感器经过过滤后的值
-    //TODO: 十字路口取值
+    //采用队列的方式保存中间传感器经过过滤后的�????
+    //TODO: 十字路口取�??
 //        if (middleResult >= 2000 && dat_LM <= 250 && dat_L >= 2000)
 //            //处在十字路口
 //        {
@@ -343,11 +354,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //            if (crossFlag == 0) {
 //                printf("cross!!!\r\n");
 //                crossFlag = 1;
-//                //执行进入十字路口的处理
+//                //执行进入十字路口的处�????
 ////                HAL_Delay(10);
 //            } else {
 //                crossFlag = 0;
-//                //执行离开十字路口的处理
+//                //执行离开十字路口的处�????
 ////                HAL_Delay(10);
 //            }
 //        }
@@ -361,14 +372,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //        count = 0;
 //    }
 
-   // TODO: 环岛区域判断——未测试
+   // TODO: 环岛区域判断—�?�未测试
     if (TimerRoundEN) {
         if (TimerCount < 200) {
             TimerCount++;
         } else {
             roundFlag1 = 0;
             roundFlag2 = 0;
-            roundFlag3 = 0;
             TimerRoundEN = 0;
             TimerCount = 0;
             printf("Round: reset!\r\n");
@@ -386,12 +396,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             return;
         }
 
-        if (!roundFlag1 && adc_value[4] >= 1300 && fabsf(dat_LM-dat_RM) > 1000) {
-            printf("flag1\r\n");
+        if (!roundFlag1 && adc_value[4] >= 1300 && fabsf(dat_LM-dat_RM) > 1500) {
+            printf("flag1_L\r\n");
             roundFlag1 = 1;
             TimerRoundEN = 1;
-        }
-        if (roundFlag1 && adc_value[4] <= 500) {
+            isRightRound = 0;
+            }
+//        else if (!roundFlag1 && adc_value[4] >= 1300 && dat_L-dat_R < -2000)
+//        {
+//            printf("flag1_R\r\n");
+//            roundFlag1=1;
+//            TimerRoundEN = 1;
+//            isRightRound = 1;
+//        }
+        if (roundFlag1 && adc_value[4] <= 600) {
             printf("flag2\r\n");
             roundFlag2 = 1;
             printf("round!\r\n");
@@ -399,8 +417,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
             TimerCount = 0;
             roundFlag1 = 0;
             roundFlag2 = 0;
-            roundFlag3 = 0;
             isRound = 1;
+
+
         }
 
 //        if (roundFlag2 && adc_value[0] >= 2000) {
@@ -417,30 +436,30 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         //进入分叉路口
         /**
          * ForkFlag:
-         * 0--未进入分叉路口
-         * 1--第一次进入分叉路口
-         * 2--在第一次分叉路口中
-         * 3--第一次离开分叉路口
-         * 4--第二次进入分叉路口
-         * 5--在第二次分叉路口中
-         * 0--第二次离开分叉路口 !!!将会被reset到0
+         * 0--未进入分叉路�????
+         * 1--第一次进入分叉路�????
+         * 2--在第�????次分叉路口中
+         * 3--第一次离�????分叉路口
+         * 4--第二次进入分叉路�????
+         * 5--在第二次分叉路口�????
+         * 0--第二次离�????分叉路口 !!!将会被reset�????0
         */
-        //TODO: 分叉路口区域判断——待修改阈值
-        if (!isRound && !TimerCrossEN && middleResult < 500 && dat_R > 2000 && dat_L > 2000 && (dat_RM < 300 || dat_LM <300)) {
+        //TODO: 分叉路口区域判断—�?�待修改阈�??
+        if (!isRound && !TimerCrossEN && middleResult < 400 && dat_R > 1750 && dat_L > 1750 && (dat_RM < 300 || dat_LM <300)) {
 //    if (!isRound && !TimerCrossEN && fabsf(dat_LM-dat_RM)< 200 && dat_RM<300 && dat_LM <300 && dat_R > 2000 && dat_L > 2000){
             TimerCrossEN = 1;
             if (forkFlag == 0) {
                 forkFlag++;
-                //执行进入分叉路口1的处理
+                //执行进入分叉路口1的处�????
             } else if (forkFlag == 2) {
                 forkFlag+=2;
-                //执行离开分叉路口1的处理
+                //执行离开分叉路口1的处�????
             } else if (forkFlag == 3) {
                 forkFlag++;
-                //执行进入分叉路口2的处理
+                //执行进入分叉路口2的处�????
             } else if (forkFlag == 5) {
                 forkFlag = 0;
-                //执行离开分叉路口2的处理
+                //执行离开分叉路口2的处�????
             }
             printf("fork!!! count:%d\r\n", forkFlag);
         }
@@ -473,16 +492,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
     } else {
         RxBuffer[Uart1_Rx_Cnt++] = rxBuffer;   //接收数据转存
-        if (RxBuffer[Uart1_Rx_Cnt - 1] == '#') //判断结束位
+        if (RxBuffer[Uart1_Rx_Cnt - 1] == '#') //判断结束�????
         {
             if (strstr(RxBuffer, "stop") != NULL) {
                 //执行停车操作
-                servo_control(30.0f);
-                HAL_Delay(10);
-                servo_control(-20.0f);
-                HAL_Delay(10);
-                servo_control(0.0f);
-                speed = 0;
+             isEnd = 1;
             } else if (strstr(RxBuffer, "setKP") != NULL) {
                 //修改PID参数-比例系数
                 getSet(RxBuffer, 5, &piddata.kp);
@@ -507,11 +521,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 getSet(RxBuffer, 8, &speed);
 
             } else if (strstr(RxBuffer, "start") != NULL) {
-                // 开始运行
+                // �????始运�????
 
             } else if (strstr(RxBuffer, "what") != NULL) {
-                //返回当前的参数
-                printf("当前参数为:\r\n");
+                //返回当前的参�????
+                printf("当前参数�????:\r\n");
                 printf("速度:%f\r\n", speed);
                 printf("a:%f\r\n", piddata.a);
                 printf("b:%f\r\n", piddata.b);
@@ -533,7 +547,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             } else if (strstr(RxBuffer, "SetAngle")) {
                 //判断自动模式是否关闭
                 if (auto_mode) {
-                    printf("自动模式已开启,请先关闭自动模式\r\n");
+                    printf("自动模式已开�????,请先关闭自动模式\r\n");
                     return;
                 }
 
@@ -543,7 +557,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 //显示帮助信息
                 printf("帮助信息:\r\n");
                 printf("stop:停车\r\n");
-                printf("start:开始运行\r\n");
+                printf("start:�????始运行\r\n");
                 printf("setSpeed:设置速度\r\n");
                 printf("setA:设置a\r\n");
                 printf("setB:设置b\r\n");
@@ -558,7 +572,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                 printf("data:返回当前传感器数据\r\n");
 
             } else if (strstr(RxBuffer, "data") != NULL) {
-                // 获取当前传感器数据
+                // 获取当前传感器数�????
                 printf("当前传感器数据为:\r\n");
                 printf("左侧传感器L:%f  \tRAW:%hu \r\n", dat_L, adc_value[0]);
                 printf("左侧传感器LM:%f  \tRAW:%hu \r\n", dat_LM, adc_value[1]);
@@ -580,7 +594,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             memset(RxBuffer, 0x00, sizeof(RxBuffer)); //清空数组
         }
     }
-    HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);   //再开启接收中断
+    HAL_UART_Receive_IT(&huart1, (uint8_t *) &rxBuffer, 1);   //再开启接收中�????
 }
 
 #pragma clang diagnostic pop
